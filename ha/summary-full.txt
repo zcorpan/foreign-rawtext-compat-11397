@@ -1,0 +1,95 @@
+pages parsed {'rcdata': 7121, 'raw-sample': 500}
+
+== raw
+  pages ('raw-sample', 'any') 500
+  pages ('raw-sample', 'text-changes') 500
+  pages ('rcdata', 'any') 1742
+  pages ('rcdata', 'text-changes') 1742
+  raw-only extrapolated: 500/500 x 224159 = 224159
+   661 rcdata svg:title old-comment-children e.g. https://www.jimmysbigburgersmenu.com/
+   465 rcdata svg:style old-comment-children e.g. https://www.wtulneworleans.com/
+   356 raw-sample svg:style charrefs e.g. https://www.bocagelato.com.au/
+   238 raw-sample svg:style charrefs (Wix data-color) e.g. https://www.stratalearningacademy.com/
+   194 rcdata svg:style charrefs (Wix data-color) e.g. https://www.smartapply.com/
+   157 rcdata svg:title old-element-children e.g. https://berg-fit.de/
+   88 rcdata svg:style old-element-children e.g. https://exodo.org/
+   38 rcdata svg:style charrefs e.g. https://www.smartapply.com/
+   37 rcdata svg:style unterminated e.g. https://tvoy-ventil.ru/
+   29 rcdata svg:title unterminated e.g. https://pakwinapp.com.pk/
+   22 rcdata svg:script old-element-children e.g. https://cbusa.us/
+   20 rcdata svg:noscript old-element-children e.g. https://thebumptobabychapter.co.uk/
+   20 rcdata svg:style text-differs-other e.g. https://forpawspetcare.com.au/
+   15 rcdata svg:style unaligned e.g. https://osteoclin.com.br/
+   14 rcdata svg:title unaligned e.g. https://engineers-hub.com/
+   12 rcdata svg:script unterminated e.g. https://www.kensingtonprep.gdst.net/
+   9 rcdata svg:script unaligned e.g. https://www.tampaneuropsychiatry.com/
+   5 rcdata svg:script charrefs e.g. https://jupiterlogistics.group/
+   5 rcdata svg:title text-differs-other e.g. https://press.alange-soehne.com/
+   5 rcdata svg:script text-differs-other e.g. https://www.tampaneuropsychiatry.com/
+   3 rcdata svg:style text-differs-other,old-open-at-eof e.g. https://osteoclin.com.br/
+   3 rcdata svg:script unterminated,charrefs e.g. https://www.jaisli-xamax.ch/
+   3 rcdata svg:script old-comment-children e.g. https://80th.chinapress.com.my/
+   2 rcdata svg:noscript text-differs-other e.g. https://ligabankov.ru/
+   2 rcdata svg:style old-element-children,old-comment-children e.g. https://iconicguest.com/
+   1 rcdata svg:style unterminated,old-comment-children e.g. https://www.platformart.com/
+   1 rcdata svg:title unterminated,old-element-children e.g. https://www.ncsfrance.fr/
+   1 rcdata svg:style old-comment-children,old-open-at-eof e.g. https://cral.ehess.fr/
+   1 rcdata svg:style unterminated,old-element-children e.g. https://blog.paradigma.de/
+   1 rcdata svg:style unterminated,old-element-children,old-comment-children e.g. https://www.agua-eshop.com/
+
+== rcdata
+  pages ('rcdata', 'any') 1529
+  pages ('rcdata', 'text-changes') 1529
+   661 rcdata svg:title old-comment-children e.g. https://www.jimmysbigburgersmenu.com/
+   465 rcdata svg:style old-comment-children e.g. https://www.wtulneworleans.com/
+   157 rcdata svg:title old-element-children e.g. https://berg-fit.de/
+   88 rcdata svg:style old-element-children e.g. https://exodo.org/
+   37 rcdata svg:style unterminated e.g. https://tvoy-ventil.ru/
+   29 rcdata svg:title unterminated e.g. https://pakwinapp.com.pk/
+   22 rcdata svg:script old-element-children e.g. https://cbusa.us/
+   20 rcdata svg:noscript old-element-children e.g. https://thebumptobabychapter.co.uk/
+   20 rcdata svg:style text-differs-other e.g. https://forpawspetcare.com.au/
+   15 rcdata svg:style unaligned e.g. https://osteoclin.com.br/
+   15 rcdata svg:script unterminated e.g. https://www.kensingtonprep.gdst.net/
+   14 rcdata svg:title unaligned e.g. https://engineers-hub.com/
+   9 rcdata svg:script unaligned e.g. https://www.tampaneuropsychiatry.com/
+   5 rcdata svg:title text-differs-other e.g. https://press.alange-soehne.com/
+   5 rcdata svg:script text-differs-other e.g. https://www.tampaneuropsychiatry.com/
+   3 rcdata svg:style text-differs-other,old-open-at-eof e.g. https://osteoclin.com.br/
+   3 rcdata svg:script old-comment-children e.g. https://80th.chinapress.com.my/
+   2 rcdata svg:noscript text-differs-other e.g. https://ligabankov.ru/
+   2 rcdata svg:style old-element-children,old-comment-children e.g. https://iconicguest.com/
+   1 rcdata svg:style unterminated,old-comment-children e.g. https://www.platformart.com/
+   1 rcdata svg:title unterminated,old-element-children e.g. https://www.ncsfrance.fr/
+   1 rcdata svg:style old-comment-children,old-open-at-eof e.g. https://cral.ehess.fr/
+   1 rcdata svg:style unterminated,old-element-children e.g. https://blog.paradigma.de/
+   1 rcdata svg:style unterminated,old-element-children,old-comment-children e.g. https://www.agua-eshop.com/
+
+== rcdata-dc
+  pages ('rcdata', 'any') 1530
+  pages ('rcdata', 'text-changes') 509
+   651 rcdata svg:title dom-only e.g. https://www.jimmysbigburgersmenu.com/
+   354 rcdata svg:style dom-only e.g. https://www.wtulneworleans.com/
+   157 rcdata svg:title old-element-children e.g. https://berg-fit.de/
+   116 rcdata svg:style old-comment-children e.g. https://oakdalerec.coop/
+   85 rcdata svg:style old-element-children e.g. https://exodo.org/
+   37 rcdata svg:style unterminated e.g. https://tvoy-ventil.ru/
+   29 rcdata svg:title unterminated e.g. https://pakwinapp.com.pk/
+   21 rcdata svg:style text-differs-other e.g. https://forpawspetcare.com.au/
+   20 rcdata svg:noscript old-element-children e.g. https://thebumptobabychapter.co.uk/
+   18 rcdata svg:script dom-only e.g. https://melia-musik.de/
+   15 rcdata svg:style unaligned e.g. https://osteoclin.com.br/
+   15 rcdata svg:script unterminated e.g. https://www.kensingtonprep.gdst.net/
+   14 rcdata svg:title unaligned e.g. https://engineers-hub.com/
+   10 rcdata svg:title old-comment-children e.g. https://afugentando.pt/
+   9 rcdata svg:script unaligned e.g. https://www.tampaneuropsychiatry.com/
+   7 rcdata svg:script old-element-children e.g. https://cbusa.us/
+   5 rcdata svg:title text-differs-other e.g. https://press.alange-soehne.com/
+   5 rcdata svg:script text-differs-other e.g. https://www.tampaneuropsychiatry.com/
+   3 rcdata svg:style text-differs-other,old-open-at-eof e.g. https://osteoclin.com.br/
+   2 rcdata svg:noscript text-differs-other e.g. https://ligabankov.ru/
+   1 rcdata svg:style old-element-children,old-comment-children e.g. https://iconicguest.com/
+   1 rcdata svg:style unterminated,old-comment-children e.g. https://www.platformart.com/
+   1 rcdata svg:title unterminated,old-element-children e.g. https://www.ncsfrance.fr/
+   1 rcdata svg:style unterminated,old-element-children e.g. https://blog.paradigma.de/
+   1 rcdata svg:style unterminated,old-element-children,old-comment-children e.g. https://www.agua-eshop.com/

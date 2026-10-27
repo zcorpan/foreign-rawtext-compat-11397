@@ -8,3 +8,4 @@ out-cc/CC-*.jsonl
 out-cc/dc.jsonl
 out-*/review/
 *.log
+out-ha-*/review/

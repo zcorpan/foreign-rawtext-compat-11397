@@ -1,0 +1,239 @@
+== rcdata (pages per pattern; rcdata-dc excludes comment-only DOM changes)
+    629 title: comment: empty <!-- --> (React text separator)   e.g. https://www.jimmysbigburgersmenu.com/
+    138 style: comment: other (unclosed or long)   e.g. https://www.electron.com.tr/
+    118 style: comment: <!--/*...-->   e.g. https://oakdalerec.coop/
+     88 style: comment: other   e.g. https://www.wtulneworleans.com/
+     87 style: comment: empty <!-- --> (React text separator)   e.g. https://marcioluizcorretor.com.br/
+     72 style: other   e.g. https://www.grassin-associes-melun.fr/
+     68 title: element: <span>   e.g. https://www.velux.ro/
+     63 style: element: <tspan> in style   e.g. https://www.crtcharity.org/
+     36 style: unterminated (truncated body)   e.g. https://tvoy-ventil.ru/
+     29 title: unterminated (truncated body)   e.g. https://pakwinapp.com.pk/
+     28 script: other   e.g. https://melia-musik.de/
+     20 title: element: <br>   e.g. https://kommunalwahl2026.bayern.de/
+     16 title: element: <tspan> in style   e.g. https://www.aeswellnessportal.ca/
+     16 title: other   e.g. https://engineers-hub.com/
+     15 noscript: element: <iframe>   e.g. https://engineers-hub.com/
+     15 script: unterminated (truncated body)   e.g. https://www.kensingtonprep.gdst.net/
+     14 title: element: <ly-as-328339>   e.g. https://berg-fit.de/
+     14 title: element: <ly-as-328340>   e.g. https://berg-fit.de/
+     14 title: element: <ly-as-328341>   e.g. https://berg-fit.de/
+     13 title: element: <ly-as-328336>   e.g. https://berg-fit.de/
+     11 style: element: <style>   e.g. https://sultanrestaurants.com/
+     10 title: comment: <!--t.N.N.N.N--> (framework marker)   e.g. https://www.turva.fi/
+     10 title: pi: <?...>   e.g. https://afugentando.pt/
+      7 title: comment: other   e.g. https://rust-ui.com/
+      6 title: element: <a>   e.g. https://www.bankofcanadamuseum.ca/
+      5 title: comment: <!--ng...--> (Angular)   e.g. https://www.universalmusicforcreators.com/
+      4 noscript: element: <link>   e.g. https://thebumptobabychapter.co.uk/
+      4 script: element: <svg>   e.g. https://www.tampaneuropsychiatry.com/
+      4 title: element: <h1>   e.g. https://kotosankaku.jp/
+      4 style: element: <defs>   e.g. https://songdo-leenstar.com/
+      4 style: unterminated (complete body)   e.g. https://www.pleasewaittobeseated.com/
+      3 title: element: <ly-as-328337>   e.g. https://bergaktiv.de/
+      3 title: element: <time>   e.g. https://content.boston.gov/
+      3 script: element: <script>   e.g. https://www.tslabor.hu/
+      3 title: element: <div>   e.g. https://www.swift.com/
+      2 script: element: <g>   e.g. https://cbusa.us/
+      2 title: element: <path>   e.g. https://www.tiremax.net/
+      2 noscript: element: <div>   e.g. https://ligabankov.ru/
+      2 title: element: <text>   e.g. https://layoners.com/
+      2 style: element: <br>   e.g. https://transgear.by/
+      2 title: element: <p>   e.g. https://www.andover.edu/
+      2 title: element: <sup>   e.g. https://everythingatrc.com/
+      2 style: element: <rect>   e.g. https://de.versacourt.com/
+      2 title: element: <g>   e.g. https://courses.advancesafe.com.sg/
+      2 style: element: <def>   e.g. https://www.lacdebienne.ch/
+      1 style: element: <fill>   e.g. https://exodo.org/
+      1 title: element: <ly-as-285484>   e.g. https://www.herbanica.ca/
+      1 title: element: <ly-as-285482>   e.g. https://www.herbanica.ca/
+      1 title: element: <ly-as-285471>   e.g. https://www.herbanica.ca/
+      1 title: element: <ly-as-285473>   e.g. https://www.herbanica.ca/
+      1 title: comment: other (unclosed or long)   e.g. https://www.tiremax.net/
+      1 style: element: <use>   e.g. https://www.baristasroastery.com/
+      1 title: element: <svg>   e.g. https://press.alange-soehne.com/
+      1 title: element: <desc>   e.g. https://octaralife.com/
+      1 title: element: <fontsninja-text>   e.g. https://www.pointe-des-cascades.com/
+      1 style: element: <g>   e.g. https://180graus.com/
+      1 style: element: <ul>   e.g. https://forpawspetcare.com.au/
+      1 title: element: <b>   e.g. https://www.southshieldsfc.co.uk/
+      1 style: element: <symbol>   e.g. https://www.getwebup.in/
+      1 style: element: <a>   e.g. https://www.derefuge.be/
+      1 title: element: <ly-as-686720>   e.g. https://drops.wine/
+      1 title: element: <ly-as-686721>   e.g. https://drops.wine/
+      1 noscript: element: <style>   e.g. https://ingram.tech/
+      1 title: element: <strong>   e.g. https://immoma.de/
+      1 style: pi: <?...>   e.g. https://www.tradesmeninternational.com/
+      1 title: element: <title>   e.g. https://www.saladeprensa.vodafone.es/
+      1 title: element: <acronym>   e.g. https://www.biomassconnect.org/
+      1 title: element: <ly-as-15798713>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798733>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798728>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798738>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798715>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798716>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798726>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798707>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798729>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798730>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798721>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798741>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798717>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798723>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798727>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798710>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798708>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798705>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798706>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798731>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798740>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798734>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798742>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798719>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798724>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798712>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798725>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798718>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798732>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798735>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798714>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798739>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798709>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798720>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798722>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798711>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798736>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798737>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-328338>   e.g. https://thermostark.de/
+      1 title: comment: <!--$...-->   e.g. https://www.mindbodygreen.com/
+      1 title: element: <sub>   e.g. https://www.noxgear.com/
+      1 style: element: <styl>   e.g. https://kosei-kigyo.co.jp/
+      1 title: unterminated (complete body)   e.g. https://www.ncsfrance.fr/
+      1 title: element: <phone>   e.g. https://www.lywam.org/
+      1 style: element: <undefined>   e.g. https://www.all-can.org/
+      1 style: element: <button>   e.g. https://candy-planet.ca/
+      1 style: element: <summary>   e.g. https://candy-planet.ca/
+      1 style: comment: <!--/*
+...-->   e.g. https://www.edvance.fr/
+      1 style: element: <foreignobject>   e.g. https://www.covenantmfb.com.ng/
+      1 style: element: <title>   e.g. https://schon-jansen.de/
+      1 title: element: <i>   e.g. https://www.20something.be/
+      1 script: element: <defs>   e.g. https://hartsfield.co.uk/
+      1 title: element: <img>   e.g. https://www.solaria.at/
+      1 title: element: <ly-as-11580357>   e.g. https://millionsupps.com/
+      1 title: element: <ly-as-11580352>   e.g. https://millionsupps.com/
+      1 script: element: <tspan> in style   e.g. https://www.returnpro.com/
+== rcdata-dc (pages per pattern; rcdata-dc excludes comment-only DOM changes)
+    131 style: other   e.g. https://oakdalerec.coop/
+     68 title: element: <span>   e.g. https://www.velux.ro/
+     63 style: element: <tspan> in style   e.g. https://www.crtcharity.org/
+     36 style: unterminated (truncated body)   e.g. https://tvoy-ventil.ru/
+     29 title: unterminated (truncated body)   e.g. https://pakwinapp.com.pk/
+     20 title: element: <br>   e.g. https://kommunalwahl2026.bayern.de/
+     16 title: element: <tspan> in style   e.g. https://www.aeswellnessportal.ca/
+     15 noscript: element: <iframe>   e.g. https://engineers-hub.com/
+     15 script: unterminated (truncated body)   e.g. https://www.kensingtonprep.gdst.net/
+     14 title: element: <ly-as-328339>   e.g. https://berg-fit.de/
+     14 title: element: <ly-as-328340>   e.g. https://berg-fit.de/
+     14 title: element: <ly-as-328341>   e.g. https://berg-fit.de/
+     13 title: element: <ly-as-328336>   e.g. https://berg-fit.de/
+     11 style: element: <style>   e.g. https://sultanrestaurants.com/
+     10 title: pi: <?...>   e.g. https://afugentando.pt/
+      6 title: element: <a>   e.g. https://www.bankofcanadamuseum.ca/
+      4 noscript: element: <link>   e.g. https://thebumptobabychapter.co.uk/
+      4 script: element: <svg>   e.g. https://www.tampaneuropsychiatry.com/
+      4 title: element: <h1>   e.g. https://kotosankaku.jp/
+      4 style: element: <defs>   e.g. https://songdo-leenstar.com/
+      4 style: unterminated (complete body)   e.g. https://www.pleasewaittobeseated.com/
+      3 title: element: <ly-as-328337>   e.g. https://bergaktiv.de/
+      3 title: element: <time>   e.g. https://content.boston.gov/
+      3 title: other   e.g. https://wearitageindia.com/
+      3 script: element: <script>   e.g. https://www.tslabor.hu/
+      3 title: element: <div>   e.g. https://www.swift.com/
+      2 script: element: <g>   e.g. https://cbusa.us/
+      2 title: element: <path>   e.g. https://www.tiremax.net/
+      2 noscript: element: <div>   e.g. https://ligabankov.ru/
+      2 title: element: <text>   e.g. https://layoners.com/
+      2 style: element: <a>   e.g. https://www.derefuge.be/
+      2 style: element: <br>   e.g. https://transgear.by/
+      2 title: element: <p>   e.g. https://www.andover.edu/
+      2 title: element: <sup>   e.g. https://everythingatrc.com/
+      2 style: element: <rect>   e.g. https://de.versacourt.com/
+      2 title: element: <g>   e.g. https://courses.advancesafe.com.sg/
+      2 style: element: <def>   e.g. https://www.lacdebienne.ch/
+      1 style: element: <fill>   e.g. https://exodo.org/
+      1 title: element: <ly-as-285484>   e.g. https://www.herbanica.ca/
+      1 title: element: <ly-as-285482>   e.g. https://www.herbanica.ca/
+      1 title: element: <ly-as-285471>   e.g. https://www.herbanica.ca/
+      1 title: element: <ly-as-285473>   e.g. https://www.herbanica.ca/
+      1 style: element: <use>   e.g. https://www.baristasroastery.com/
+      1 title: element: <svg>   e.g. https://press.alange-soehne.com/
+      1 title: element: <desc>   e.g. https://octaralife.com/
+      1 title: element: <fontsninja-text>   e.g. https://www.pointe-des-cascades.com/
+      1 style: element: <g>   e.g. https://180graus.com/
+      1 style: element: <ul>   e.g. https://forpawspetcare.com.au/
+      1 title: element: <b>   e.g. https://www.southshieldsfc.co.uk/
+      1 style: element: <symbol>   e.g. https://www.getwebup.in/
+      1 title: element: <ly-as-686720>   e.g. https://drops.wine/
+      1 title: element: <ly-as-686721>   e.g. https://drops.wine/
+      1 noscript: element: <style>   e.g. https://ingram.tech/
+      1 style: element: <svg>   e.g. https://iconicguest.com/
+      1 title: element: <strong>   e.g. https://immoma.de/
+      1 style: pi: <?...>   e.g. https://www.tradesmeninternational.com/
+      1 title: element: <title>   e.g. https://www.saladeprensa.vodafone.es/
+      1 title: element: <acronym>   e.g. https://www.biomassconnect.org/
+      1 title: element: <ly-as-15798713>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798733>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798728>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798738>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798715>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798716>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798726>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798707>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798729>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798730>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798721>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798741>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798717>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798723>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798727>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798710>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798708>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798705>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798706>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798731>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798740>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798734>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798742>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798719>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798724>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798712>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798725>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798718>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798732>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798735>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798714>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798739>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798709>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798720>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798722>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798711>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798736>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-15798737>   e.g. https://www.mastermassage.de/
+      1 title: element: <ly-as-328338>   e.g. https://thermostark.de/
+      1 title: element: <sub>   e.g. https://www.noxgear.com/
+      1 style: element: <styl>   e.g. https://kosei-kigyo.co.jp/
+      1 title: unterminated (complete body)   e.g. https://www.ncsfrance.fr/
+      1 script: other   e.g. https://kkids.co.il/
+      1 title: element: <phone>   e.g. https://www.lywam.org/
+      1 style: element: <undefined>   e.g. https://www.all-can.org/
+      1 style: element: <button>   e.g. https://candy-planet.ca/
+      1 style: element: <summary>   e.g. https://candy-planet.ca/
+      1 style: element: <foreignobject>   e.g. https://www.covenantmfb.com.ng/
+      1 style: element: <title>   e.g. https://schon-jansen.de/
+      1 title: element: <i>   e.g. https://www.20something.be/
+      1 script: element: <defs>   e.g. https://hartsfield.co.uk/
+      1 title: element: <img>   e.g. https://www.solaria.at/
+      1 title: element: <ly-as-11580357>   e.g. https://millionsupps.com/
+      1 title: element: <ly-as-11580352>   e.g. https://millionsupps.com/
+      1 script: element: <tspan> in style   e.g. https://www.returnpro.com/

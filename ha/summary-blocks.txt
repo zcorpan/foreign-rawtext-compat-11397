@@ -128,7 +128,7 @@ errors 0
   1 js-string svg:title cdata-markers
   1 js-string svg:iframe unaligned
 
-== rcdata-dc: pages {'markup': 3767, 'js-string': 3354}
+== rcdata-dc: pages {'markup': 3765, 'js-string': 3354}
   1607 js-string svg:style old-element-children
   1168 js-string svg:title unterminated
   1038 js-string svg:style unterminated
@@ -142,28 +142,28 @@ errors 0
   437 markup svg:style old-element-children
   360 markup svg:style unterminated
   330 js-string svg:script old-element-children
-  301 markup svg:script text-differs-other
+  300 markup svg:script text-differs-other
   298 markup svg:script unterminated
   229 js-string svg:script text-differs-other
   206 markup svg:title old-element-children
   184 markup svg:style unaligned
   179 markup svg:noscript old-comment-children
-  142 markup svg:style cdata-markers
   142 markup svg:noscript old-element-children
+  141 markup svg:style cdata-markers
   117 markup svg:title unterminated
   111 markup svg:script old-open-at-eof
   88 js-string svg:noscript unaligned
   78 js-string svg:script old-comment-children
-  61 markup svg:style text-differs-other
+  60 markup svg:style text-differs-other
   59 js-string svg:script unterminated
   50 js-string svg:noscript old-element-children
   48 markup svg:script old-comment-children
-  43 markup svg:script cdata-markers
+  42 markup svg:script cdata-markers
   39 markup svg:noscript text-differs-other
   28 js-string svg:script old-open-at-eof
   25 markup svg:noscript unaligned
   19 markup svg:title unaligned
-  18 js-string svg:script cdata-markers
+  17 js-string svg:script cdata-markers
   16 js-string svg:title unaligned
   16 markup svg:style old-open-at-eof
   13 js-string svg:style cdata-markers

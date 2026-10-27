@@ -193,6 +193,38 @@ without adding a vector, and neither corpus has any SVG/MathML `plaintext`:
 - make `plaintext` a breakout tag in foreign content (like `p` or `div`), so it's always the HTML
   element.
 
+## 5. Breaking out instead, for elements SVG/MathML doesn't need
+
+Alternative for `textarea`, `xmp`, `iframe`, `noembed`, `noframes` and `plaintext`: make them
+break out of foreign content (like `p` or `div`), so they're always HTML elements. `noscript`
+would stay an SVG/MathML element, tokenized like HTML `noscript`. `title`, `style` and `script`
+would stay as in the variants above.
+
+- Common Crawl's exact parse has none of these seven as SVG/MathML elements in 256,037 pages
+  (`out-cc/summary.txt`).
+- HTTP Archive downloaded bodies (`ha/breakout_check.py` → `ha/breakout_check.txt`): 22 SVG
+  `noscript` and 15 SVG `iframe`, every `iframe` inside such a `noscript`. They're Google Tag
+  Manager's `<noscript><iframe …>` snippet, or WordPress's `<noscript><link …>` font fallback,
+  injected just inside a hidden SVG sprite at the start of `<body>`. On 15 of the 22 `noscript`
+  elements, SVG content (`symbol`, `g`, gradients) follows. Breaking out of `noscript` would close
+  the sprite there and lose its symbols, so the icons using them would disappear. Keeping
+  `noscript` in SVG with raw-text tokenization turns the snippet into inert text, which matches
+  what it does today (an SVG-namespace `iframe` or `link` does nothing).
+- HTTP Archive, every root page with `textarea`, `xmp`, `iframe`, `noembed`, `noframes` or
+  `plaintext` inside an SVG/MathML block at regex level (`queries/breakout-candidates.sql` on the
+  candidate table → `queries/breakout-candidates.json`, 2,987 pages). Fetched live on 2026-10-27
+  and parsed today's way (`ha/breakout_live.py` → `out-ha-breakout-live.jsonl`; 27 fetch errors).
+  One real SVG/MathML element turned up: an SVG `iframe` embedding YouTube on
+  petrovskaja-school.ru, with nothing in SVG after it. Breaking out would make that video load. No
+  real SVG/MathML `textarea`, `xmp`, `noembed`, `noframes` or `plaintext` turned up.
+
+Regex recall: `queries/candidates.sql` matches each element with up to 40 characters of
+trailing context, which hides an element-of-interest start tag right after it (e.g.
+`<noscript><iframe`, `</title><style`). Measured on the Common Crawl pages whose exact parse
+differs (`ha/regex_recall.py` → `ha/regex_recall.txt`), it flags 548 of 550 raw-only pages and 26
+of 28 rcdata pages. One of the two rcdata misses is an html5lib artifact. So the HTTP Archive
+counts in section 1 may undercount by a few percent.
+
 ## Not covered
 
 - Desktop pages and non-root pages.
@@ -215,3 +247,4 @@ All on the 2026-10-01 crawl, run 2026-10-27:
 | blocks copy for download | 3.2 GB |
 | bodies copy for selected pages | 268 GB |
 | `queries/plaintext.sql` (both clients) | 11.2 GB |
+| `queries/breakout-candidates.sql` (candidate table, restored) | 0.6 GB |

@@ -2,4 +2,4 @@
 # Installed with: git config core.hooksPath hooks
 PY=.venv/bin/python
 [ -x "$PY" ] || PY=python3
-exec "$PY" publish_check.py --staged --crawl=queries/**/*.csv,out-cc/differs.jsonl,out-cc/raw-patterns.txt,ha/selected.csv,ha/*.txt,sample-ha-*.jsonl,out-cc/plaintext.jsonl
+exec "$PY" publish_check.py --staged --crawl=queries/**/*.csv,out-cc/differs.jsonl,out-cc/raw-patterns.txt,ha/selected.csv,ha/*.txt,sample-ha-*.jsonl,out-cc/plaintext.jsonl,queries/breakout-candidates.json,out-ha-breakout-live.jsonl

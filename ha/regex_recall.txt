@@ -1,0 +1,6 @@
+raw-only: regex flags 548 of 550 pages that differ
+rcdata: regex flags 26 of 28 pages that differ
+  missed ('rcdata', 'https://el.hotels.com/ho491255/pandora-s-forest-adults-only-krosbil-enomenes-politeies/')
+  missed ('raw-only', 'https://www.daera-ni.gov.uk/publications/derryleckagh-assi')
+  missed ('rcdata', 'https://perm.alkesta.ru/med/filter/marka-is-c122/apply/')
+  missed ('raw-only', 'https://www.daera-ni.gov.uk/publications/northern-ireland-species-action-plan-freshwater-pearl-mussel')

@@ -1,0 +1,27 @@
+{"svg:iframe": 15, "svg:noscript": 22}
+('svg', 'iframe')
+    https://engineers-hub.com/ children: [] text: ""
+    https://assistenciatecnicabrastech.com.br/ children: [] text: ""
+    https://anuevajewelry.com/ children: [] text: ""
+    https://10-03-53.com/ children: [] text: ""
+    https://hockeyrevolution.eu/ children: [] text: ""
+('svg', 'noscript')
+    https://thebumptobabychapter.co.uk/ children: ['link'] text: ""
+    https://ligabankov.ru/ children: [] text: ""
+    https://engineers-hub.com/ children: ['iframe'] text: ""
+    https://eindhovenengine.nl/ children: ['link'] text: ""
+    https://brunaazevedo.com.br/ children: ['link'] text: ""
+{('noscript', 'svg content after it'): 15, ('noscript', 'nothing SVG after it'): 7, ('iframe', 'svg content after it'): 10, ('iframe', 'nothing SVG after it'): 5}
+   ('https://thebumptobabychapter.co.uk/', 'noscript', ['g'])
+   ('https://ligabankov.ru/', 'noscript', [])
+   ('https://engineers-hub.com/', 'noscript', ['symbol', 'symbol', 'symbol', 'symbol', 'symbol', 'symbol'])
+   ('https://engineers-hub.com/', 'iframe', ['symbol', 'symbol', 'symbol', 'symbol', 'symbol', 'symbol'])
+   ('https://eindhovenengine.nl/', 'noscript', ['g'])
+   ('https://brunaazevedo.com.br/', 'noscript', ['polygon'])
+   ('https://assistenciatecnicabrastech.com.br/', 'noscript', [])
+   ('https://assistenciatecnicabrastech.com.br/', 'iframe', [])
+   ('https://anuevajewelry.com/', 'noscript', ['linearGradient'])
+   ('https://anuevajewelry.com/', 'iframe', ['linearGradient'])
+   ('https://18ps.ru/', 'noscript', [])
+   ('https://10-03-53.com/', 'noscript', ['linearGradient'])
+svg:iframe: {'inside svg:noscript': 15}

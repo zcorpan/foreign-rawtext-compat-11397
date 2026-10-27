@@ -197,8 +197,19 @@ without adding a vector, and neither corpus has any SVG/MathML `plaintext`:
 
 Alternative for `textarea`, `xmp`, `iframe`, `noembed`, `noframes` and `plaintext`: make them
 break out of foreign content (like `p` or `div`), so they're always HTML elements. `noscript`
-would stay an SVG/MathML element, tokenized like HTML `noscript`. `title`, `style` and `script`
-would stay as in the variants above.
+can't break out (see below), so it would stay an SVG/MathML element, parsed as RCDATA like the
+other elements that stay (`title`, `style`, `script`).
+
+Why RCDATA for the elements that stay: with the escaped serialization foreign elements already
+get, RCDATA round-trips (character references are decoded on parsing and escaped on
+serializing). In document parsing, HTML parsers following the current spec also read that
+serialization back as the same text-only element. The alternatives don't work as well:
+
+- Raw text (like HTML `noscript` with scripting enabled) with escaped serialization doesn't
+  round-trip: `&amp;` stays literal text, serializes as `&amp;amp;`, and grows on every
+  parse and serialize.
+- Raw text with literal serialization (like HTML) round-trips in updated parsers, but current
+  parsers turn the literal text back into elements.
 
 - Common Crawl's exact parse has none of these seven as SVG/MathML elements in 256,037 pages
   (`out-cc/summary.txt`).
@@ -208,8 +219,8 @@ would stay as in the variants above.
   injected just inside a hidden SVG sprite at the start of `<body>`. On 15 of the 22 `noscript`
   elements, SVG content (`symbol`, `g`, gradients) follows. Breaking out of `noscript` would close
   the sprite there and lose its symbols, so the icons using them would disappear. Keeping
-  `noscript` in SVG with raw-text tokenization turns the snippet into inert text, which matches
-  what it does today (an SVG-namespace `iframe` or `link` does nothing).
+  `noscript` in SVG, parsed as RCDATA, turns the snippet into inert text. That matches what it
+  does today: an SVG-namespace `iframe` or `link` does nothing.
 - HTTP Archive, every root page with `textarea`, `xmp`, `iframe`, `noembed`, `noframes` or
   `plaintext` inside an SVG/MathML block at regex level (`queries/breakout-candidates.sql` on the
   candidate table → `queries/breakout-candidates.json`, 2,987 pages). Fetched live on 2026-10-27

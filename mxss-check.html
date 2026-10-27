@@ -1,0 +1,27 @@
+<!doctype html>
+<pre id=out></pre>
+<script>
+const log = [];
+window.hits = [];
+const names = ['style', 'title', 'textarea', 'xmp', 'noembed', 'noframes', 'iframe', 'noscript'];
+// A: HTML -> MathML on reparse (securitum's form/mglyph mutation). Payload is text in parse 1.
+for (const name of names) {
+  const input = `<form><math><mtext></form><form><mglyph><${name}></math><img src=x data-hit="A-${name}"></${name}></mglyph></mtext></math></form>`;
+  const d1 = new DOMParser().parseFromString(input, 'text/html');
+  const d2 = new DOMParser().parseFromString(d1.body.innerHTML, 'text/html');
+  log.push(`A ${name}: parse1 ns=${d1.querySelector(name)?.namespaceURI.split('/').pop()} reparse ns=${d2.querySelector(name)?.namespaceURI.split('/').pop()} img created=${!!d2.querySelector('img[data-hit]')}`);
+}
+// B: foreign -> HTML (emulated: the foreign element's serialization reparsed in HTML context).
+// Payload carried by a comment or PI child in parse 1.
+for (const name of names) {
+  for (const carrier of ['comment', 'pi', 'cdata']) {
+    const inner = carrier == 'comment' ? `<!--</${name}><img src=x data-hit=1>-->` : carrier == 'pi' ? `<?x </${name}><img src=x data-hit=1>?>` : `<![CDATA[</${name}><img src=x data-hit=1>]]>`;
+    const d1 = new DOMParser().parseFromString(`<svg><${name}>${inner}</${name}></svg>`, 'text/html');
+    const el = d1.querySelector(name);
+    const kids = [...el.childNodes].map(n => n.nodeType).join(',');
+    const d2 = new DOMParser().parseFromString(el.outerHTML, 'text/html');
+    log.push(`B ${name} ${carrier}: parse1 child types=${kids} img after HTML reparse=${!!d2.querySelector('img[data-hit]')}`);
+  }
+}
+document.getElementById('out').textContent = log.join('\n');
+</script>

@@ -39,3 +39,7 @@ for c in ["<svg><style>.a<!-- -->{<!-- -->fill:none<!-- -->}</style></svg>", "<s
     for m in ("old", "rcdata", "rcdata-dc"):
         doc, info = frparse.parse(c, m)
         print(m, [kids(r["etree"]) for r in info["elements"]], [e.tag.split('}')[-1] for e in doc.iter() if isinstance(e.tag, str)])
+for c in ["<svg><style><!--/*--><![CDATA[/* ><!--*/\n.a{fill:red}\n/*]]>*/--></style></svg>"]:
+    for m in ("old", "rcdata", "rcdata-dc"):
+        doc, info = frparse.parse(c, m)
+        print(m, [kids(r["etree"]) for r in info["elements"]])

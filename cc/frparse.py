@@ -88,7 +88,8 @@ def _make_lt_state(orig, base_name):
                     return True
                 for c in reversed(got):
                     self.stream.unget(c)
-                if self.parser._fr_mode == "rcdata-dc" and base_name == "rcdataState":
+                # As in the Gecko patch, comments between CDATA markers aren't dropped.
+                if self.parser._fr_mode == "rcdata-dc" and base_name == "rcdataState" and not getattr(self, "_fr_cdata", False):
                     c1 = self.stream.char()
                     if c1 == "-":
                         c2 = self.stream.char()

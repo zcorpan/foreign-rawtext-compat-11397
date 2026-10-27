@@ -66,18 +66,18 @@ pages parsed {'rcdata': 7121, 'raw-sample': 500}
    1 rcdata svg:style unterminated,old-element-children,old-comment-children e.g. https://www.agua-eshop.com/
 
 == rcdata-dc
-  pages ('rcdata', 'any') 1530
-  pages ('rcdata', 'text-changes') 509
+  pages ('rcdata', 'any') 1529
+  pages ('rcdata', 'text-changes') 409
    651 rcdata svg:title dom-only e.g. https://www.jimmysbigburgersmenu.com/
-   354 rcdata svg:style dom-only e.g. https://www.wtulneworleans.com/
+   453 rcdata svg:style dom-only e.g. https://www.wtulneworleans.com/
    157 rcdata svg:title old-element-children e.g. https://berg-fit.de/
-   116 rcdata svg:style old-comment-children e.g. https://oakdalerec.coop/
    85 rcdata svg:style old-element-children e.g. https://exodo.org/
    37 rcdata svg:style unterminated e.g. https://tvoy-ventil.ru/
    29 rcdata svg:title unterminated e.g. https://pakwinapp.com.pk/
-   21 rcdata svg:style text-differs-other e.g. https://forpawspetcare.com.au/
    20 rcdata svg:noscript old-element-children e.g. https://thebumptobabychapter.co.uk/
+   20 rcdata svg:style text-differs-other e.g. https://forpawspetcare.com.au/
    18 rcdata svg:script dom-only e.g. https://melia-musik.de/
+   17 rcdata svg:style old-comment-children e.g. https://greenwest39.ru/
    15 rcdata svg:style unaligned e.g. https://osteoclin.com.br/
    15 rcdata svg:script unterminated e.g. https://www.kensingtonprep.gdst.net/
    14 rcdata svg:title unaligned e.g. https://engineers-hub.com/

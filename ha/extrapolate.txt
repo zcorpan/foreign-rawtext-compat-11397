@@ -1,0 +1,5 @@
+rcdata (mode 2): visibly broken: 1/100 -> ~14 of 1444 pages (95% CI 0-79)
+rcdata-dc (mode 3): visibly broken: 0/100 -> ~0 of 1444 pages (95% CI 0-52)
+modes 2 and 3: React hydration errors: 4/100 -> ~58 of 1444 pages (95% CI 16-143)
+raw (mode 1), Wix: icons visibly recolored after load: 5/100 -> ~11295 of 225901 pages (95% CI 3712-25490)
+raw (mode 1), Wix: style text still escaped after load: 17/100 -> ~38403 of 225901 pages (95% CI 23102-58322)

@@ -2,122 +2,149 @@
 
 Proposed change: in foreign content, a non-self-closing start tag for `style`, `script`, `title`,
 `textarea`, `xmp`, `iframe`, `noembed`, `noframes`, `noscript` or `plaintext` still creates the
-SVG/MathML element, but switches the tokenizer the way the HTML element does. Element boundaries
-are then the same in every namespace, and namespace-confusion mXSS relies on them differing.
-Three variants were measured:
+SVG/MathML element, but switches the tokenizer so its contents can't become markup. Then
+something that was text in one namespace can't parse as markup after a serialize and reparse puts
+it in the other (namespace-confusion mXSS). Three variants:
 
-- **raw**: like HTML (RAWTEXT, script data, RCDATA for `title`/`textarea`, PLAINTEXT), and the
-  raw text elements' text serializes literally, like the HTML elements.
-- **rcdata**: RCDATA for all of them (`plaintext` stays PLAINTEXT). Character references are still
-  decoded and serialization is unchanged (escaped), so it round-trips.
-- **rcdata-dc**: rcdata, plus everything from `<!--` to the next `-->` inside these elements is
-  dropped from the text. An end tag inside still ends the element.
+- **raw** (pref mode 1): exactly like the HTML element (RAWTEXT, script data, RCDATA for
+  `title`/`textarea`, PLAINTEXT). The raw text elements' text also serializes literally.
+- **rcdata** (mode 2): RCDATA for all of them (`plaintext` stays PLAINTEXT). Character references
+  are still decoded, and serialization is unchanged (escaped).
+- **rcdata-dc** (mode 3): rcdata, plus everything from `<!--` to the next `-->` is dropped from
+  the text. An end tag inside still ends the element.
 
-In all three, `<![CDATA[` and the next `]]>` are dropped inside these foreign elements, and
-character references aren't decoded between them. Self-closing tags (`<svg><style/>`) keep
-today's behavior.
+All three variants also drop `<![CDATA[` and the next `]]>` inside these elements, and don't
+decode character references between them. The element's end tag still ends it even inside the
+markers. Self-closing tags (`<svg><style/>`) keep today's behavior.
 
 ## Summary
 
-- **raw is not web compatible as is.** 578 of 256,037 HTML pages (0.23%) parse differently. 536
-  of them are Wix sites, whose server rendering escapes `"` as `&quot;` inside SVG `<style>`
-  (`[data-color=&quot;1&quot;]`); today's foreign-content parsing decodes that. Live, Wix
-  re-renders most SVGs after hydration, but some stay broken and the icons lose the site's
-  colors. That held on 1 of 30 sampled Wix pages
-  ([review/raw-wix-spinplaygames.png](review/raw-wix-spinplaygames.png); today left, raw
-  right). Emulating the parse without the client-side re-render shows the same effect:
-  [review/raw-wix-firststepmenstherapy-emulated.png](review/raw-wix-firststepmenstherapy-emulated.png).
-  SVG `<script>` containing `&amp;&amp;` throws a SyntaxError on 2 pages.
-- **rcdata changes 28 of 256,037 pages (0.011%)**, and none of them visibly in the live
-  comparison. The effects:
-  - SVG `<title>` text (tooltip, accessible name) now shows comments or markup that used to be
-    nodes: React, Angular, Lit and MotionPoint comment markers, `<sup>`, `</noindex>`, `<?php`.
-  - A framework duplicates title text after hydration (kbb.com, xtool.cn).
-  - React throws hydration errors #418/#423 and recovers by rendering on the client (reebelo.ca,
-    reebelo.com).
-  - On 2 pages, CSS wrapped in `<!-- -->` inside SVG `<style>` becomes active (planeo.ch,
-    protesolutio.com).
-- **rcdata-dc** removes the comment-text and activated-CSS cases. The React hydration errors and
-  the kbb.com/xtool.cn duplication remain, because they depend on the comment nodes existing.
-  The 4 markup-in-title pages remain too.
-- **CDATA**: 117 pages use `<![CDATA[` in SVG `style`/`script`/`title` (362 elements). With the
-  markers dropped, 116 of them parse identically; the remaining one differs because of a comment,
-  not the CDATA. Without the marker dropping, all 117 would get broken CSS or a script
-  SyntaxError.
-- **Self-closing**: 125 pages have `<svg><title/>`, `<style/>` or `<script/>`. Treating those as
-  start tags would swallow the rest of the page, so the change must keep honoring the slash.
-- No page had one of these foreign elements still open at EOF, and none had them in MathML.
+HTTP Archive, 2026-10-01 crawl, mobile, root pages, main documents: 15,360,905 pages.
 
-## 1. Corpus
+| | Pages that parse differently | Visible breakage (live sample) |
+|---|---|---|
+| raw | ~225,800 (1.47%), essentially all Wix | icons recolored on 5/100 Wix pages → ~11,300 pages (95% CI 3,700–25,500) |
+| rcdata | 1,449 (0.0094%) | 1/100 → ~14 pages (CI 0–79), plus 3 pages with an unclosed element |
+| rcdata-dc | 327 (0.0021%) with text changes; 1,122 more lose only comment nodes | 0/100 (CI 0–52), plus the same 3 pages |
 
-HTTP Archive wasn't reachable because the BigQuery credentials had expired;
-`queries/candidates.sql` is an unrun draft for a crawl-wide follow-up. The corpus instead is 12
-seeded random WARC files of Common Crawl CC-MAIN-2026-39 (`cc/pick_warcs.py`, seed 11397, list in
-`cc/warcs.txt`). It covers every HTTP 200 `text/html` response up to 3 MB.
+What's behind it:
 
-How the corpus was analyzed:
+- **raw**: Wix's server rendering escapes `"` as `&quot;` in SVG `<style>`
+  (`#comp-… svg [data-color=&quot;1&quot;] {fill: …}`, `#BACK_TO_TOP_BUTTON …`). Today's
+  foreign-content parsing decodes that, but raw text doesn't. Wix re-renders most SVGs after
+  hydration. On 17 of 100 sampled pages the escaped text survived, and on 5 of those the icons
+  visibly lost the site's colors ([review/raw-wix-deafplus.png](review/raw-wix-deafplus.png);
+  in every review image, today is on the left and the variant on the right).
+- **rcdata** and **rcdata-dc**: comments and tags inside these elements become text:
+  - React's `<!-- -->` text separators in SVG `<title>`/`<style>`. They cause React hydration
+    errors (#418/#423/#425, with client-side recovery) on ~58 pages (CI 16–143) in both modes.
+  - Translation-widget elements (`<ly-as-N>`), `<span>`/`<br>` and the like in titles.
+  - `<tspan>` inside `<style>`.
+  - Drupal-style `<!--/*--><![CDATA[/* ><!--*/` wrappers.
+  - PIs (`<?php`): 11 pages.
+- **rcdata only**: CSS commented out with `<!-- -->` inside SVG `<style>` becomes active. In the
+  sample, `.st0{fill:none}` made icons invisible
+  ([review/rcdata-vcsdurability-commented-css-activated.png](review/rcdata-vcsdurability-commented-css-activated.png)).
+  rcdata-dc keeps those rules inert.
+- **All three variants**: 5 pages have a genuinely unclosed SVG `<style>`/`<title>`. Examples:
+  `<style>` closed only by `</defs>`, `<style>` typed for `</style>`, `</a>` typed for
+  `</title>`. On 3 of them, everything after the SVG becomes text and the page goes blank
+  ([review/unclosed-style-greenplaceamsterdam.png](review/unclosed-style-greenplaceamsterdam.png),
+  [review/unclosed-style-agua-eshop.png](review/unclosed-style-agua-eshop.png)). Another 80 pages
+  differ only because their crawled body is truncated inside such an element; they're excluded
+  from the counts (`ha/counts.py` → `ha/counts.txt`).
+- **CDATA**: `<![CDATA[` occurs inside these SVG elements on ~7k pages (regex,
+  `queries/kinds.csv`). With the markers dropped, they parse as today. No page in either corpus
+  had the element's own end tag inside a CDATA section.
+- **Self-closing**: `<svg><title/>`, `<style/>`, `<script/>` etc. occur on ~6k pages (regex).
+  They must keep today's behavior, or the rest of the page is swallowed.
+- **mXSS check**: I ran each element in two shapes in this build.
+  - (A) securitum's `form`/`mglyph` mutation, HTML to MathML. Today it pops an `img` for `style`,
+    `xmp`, `iframe`, `noembed`, `noframes` and `noscript`.
+  - (B) a comment carrying `</title><img …>` inside the SVG element, with the element's
+    serialization reparsed as HTML. Today it pops an `img` for all of them except `noscript`, so
+    `title` and `textarea` need to be in the list too.
 
-- `cc/frparse.py` patches html5lib to implement each variant.
-- `cc/analyze_warc.py` takes every page that has an `<svg`/`<math` tag followed by one of the
-  element names, and parses it today's way and with each variant. It then aligns the foreign
-  elements of interest and compares their child nodes and child text content.
-- `cc/recheck_dc.py` reruns the pages that differ in rcdata with rcdata-dc; only those can differ.
+  All three variants close both shapes for every element except `noscript`. `noscript` still
+  differs between scripting-enabled and scripting-disabled parsers, which is a separate, existing
+  issue. Test: `mxss-check.html`.
 
-Output files:
+Common Crawl (12 seeded WARCs of CC-MAIN-2026-39, 256,037 HTML pages; section 3) agrees: raw
+0.23%, rcdata 0.011%.
 
-- `out-cc/summary.txt`: totals and per-mode counts.
-- `out-cc/differs.jsonl`: the differing pages.
-- `out-cc/raw-patterns.txt`: the patterns behind the raw-mode differences.
-- `out-cc/cdata-and-misc.txt`: the CDATA and self-closing counts.
+## 1. HTTP Archive
+
+- `queries/candidates.sql` scans every root page's main document once (7.29 TB). It finds
+  `<svg>`/`<math>` blocks, then each element of interest in them, and classifies what follows the
+  element's text: its own end tag ("plain"), or the first thing that could parse differently.
+  Candidate pages keep their blocks and body in a scratch table.
+  - Totals: `queries/totals.csv`.
+  - Per element name and kind (regex level): `queries/kinds.csv`.
+- `ha/classify.py` parses each candidate block standalone, then the full body for selected pages,
+  today's way and in each variant, with `cc/frparse.py` (html5lib patched per variant).
+  - Selected pages (`ha/selected.csv`): all 7,121 pages whose blocks differ in rcdata or
+    rcdata-dc, plus a seeded sample of 500 of the 224,159 raw-only pages.
+  - Summaries: `ha/summary-blocks.txt`, `ha/summary-full.txt`, `ha/patterns-rcdata.txt`,
+    `ha/patterns-raw-sample.txt`.
+- All 500 raw-only sample pages were confirmed on the full parse (499 are Wix), so raw is
+  about 1,742 + 224,159 pages, minus the truncated-body artifacts.
+- `ha/patterns.py` gives the patterns behind the differences (`ha/patterns-rcdata.txt`), and
+  `ha/counts.py` gives the counts without truncated-body artifacts (`ha/counts.txt`).
+- The html5lib patch's rcdata-dc mode was checked against the Gecko build, including Drupal's
+  `<!--/*--><![CDATA[/* ><!--*/ … /*]]>*/-->` wrapper (comments between CDATA markers aren't
+  dropped).
+
+## 2. Live comparison
+
+The live runs use a Firefox build with `dom.parser.foreign_rawtext.mode`.
+
+- `ff_compare.py` (Selenium, headless, 1366×768, 5 s wait) loads each page twice in mode 0 (A,
+  A2) and once in the variant (B).
+- `ff_final_diff.py` and `ff_analyze.py` list persistent element and JS-error differences not
+  seen between A and A2, and make the crops, which were reviewed by eye.
+- Intervals: `ha/extrapolate.py` → `ha/extrapolate.txt`.
+
+| Run | Pages | Persistent element change | New JS errors | Visible change |
+|---|---|---|---|---|
+| rcdata, seeded sample of the 1,444 rcdata pages (`sample-ha-rcdata.jsonl`) | 100 | 85 | 4 React hydration | 1 broken |
+| rcdata-dc, same pages | 100 | 85 | 4 React hydration | 0 |
+| rcdata and rcdata-dc, the 5 genuinely unclosed pages | 5 | 5 | 0 | 3 broken, 1 minor |
+| raw, seeded sample of raw-only Wix pages (`sample-ha-wix.jsonl`) | 100 | 17 | 0 | 5 worse (recolored icons) |
+
+One carters.com.br diff in rcdata-dc was timing noise; a recheck matched mode 0.
+
+## 3. Common Crawl
+
+Common Crawl was the first corpus, run before BigQuery was available again: every HTTP 200
+`text/html` response up to 3 MB in 12 seeded WARCs (`cc/`; outputs in `out-cc/`). Live runs of
+its differing pages are in `out-rcdata-m2`, `out-rcdata-m3`, `out-wix-m1` and `out-rawother-m1`
+(`out-final-diff.txt`).
 
 | | Pages |
 |---|---|
 | HTML responses | 256,037 |
-| with an `<svg` or `<math` tag | 128,124 |
 | with an SVG/MathML element of interest | 20,980 |
 | differs, raw | 578 |
 | differs, rcdata | 28 |
 
-## 2. Live comparison
-
-The live runs use a Firefox build with `dom.parser.foreign_rawtext.mode` (0 today, 1 raw,
-2 rcdata, 3 rcdata-dc); `ff_sanity.py` checks that each mode takes effect.
-
-- `ff_compare.py` (Selenium, headless, 1366×768, 5 s wait) loads each page twice in mode 0 (A,
-  A2) and once in the variant (B). It records each foreign element's final child nodes, text and
-  `cssRules` count, plus JS errors and full-page screenshots.
-- `ff_final_diff.py` lists the differences that don't also show up between A and A2
-  (`out-final-diff.txt`).
-- `ff_analyze.py` makes the pixel diffs and crops, which were reviewed by eye.
-
-One mode-3 run showed a "Server-side rendering timed out" page; a recheck matched mode 0.
-
-| Run | Pages | Persistent element change | New JS errors | Visible change |
-|---|---|---|---|---|
-| rcdata (mode 2), all rcdata pages | 28 | 20 | 2 React hydration (+1 network) | 0 |
-| rcdata-dc (mode 3), same pages | 28 | 19 | 2 React hydration (+1 network) | 0 |
-| raw (mode 1), seeded sample of the 536 Wix pages | 30 | 4 | 0 (+1 abort) | 1 |
-| raw (mode 1), all 14 other raw-only pages | 14 | 8 | 2 SyntaxError, 2 React hydration (+2 CSP) | 0 |
-
 ## Not covered
 
-- Pages Common Crawl doesn't reach.
+- Desktop pages and non-root pages.
 - Interaction: tooltips weren't hovered.
 - Visual changes before hydration: only the final state was screenshotted.
 - Assistive technology output.
 - Other engines.
-- Parsers outside browsers (sanitizers, server-side HTML libraries), which would need the same
-  change.
+- Parsers outside browsers (sanitizers, server-side libraries), which would need the same change.
+- Live runs used a desktop viewport on mobile-crawl pages.
 
-## Reproduce
+## Query bytes
 
-```sh
-python3 -m venv .venv && .venv/bin/pip install warcio html5lib selenium pillow
-python3 cc/pick_warcs.py warc.paths.gz 11397 12 > cc/warcs.txt  # warc.paths.gz of CC-MAIN-2026-39
-python3 cc/download.py cc/warcs.txt "$DATA"
-.venv/bin/python cc/run_all.py cc/warcs.txt "$DATA" out-cc
-.venv/bin/python cc/summarize.py > out-cc/summary.txt
-.venv/bin/python cc/recheck_dc.py out-cc "$DATA" > out-cc/dc.jsonl
-.venv/bin/python ff_compare.py "$FIREFOX" sample-rcdata.jsonl out-rcdata-m2 2   # likewise m3, wix m1, rawother m1
-.venv/bin/python ff_final_diff.py out-rcdata-m2 out-rcdata-m3 out-rawother-m1 out-wix-m1 > out-final-diff.txt
-```
+All on the 2026-10-01 crawl, run 2026-10-27:
+
+| Query | Bytes processed |
+|---|---|
+| `queries/candidates.sql` | 7.29 TB |
+| totals (`queries/totals.csv`) | 271 GB |
+| `queries/kinds.csv` | 0.5 GB |
+| blocks copy for download | 3.2 GB |
+| bodies copy for selected pages | 268 GB |

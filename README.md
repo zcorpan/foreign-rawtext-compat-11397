@@ -68,6 +68,19 @@ What's behind it:
   All three variants close both shapes for every element except `noscript`. `noscript` still
   differs between scripting-enabled and scripting-disabled parsers, which is a separate, existing
   issue. Test: `mxss-check.html`.
+- **Foreign `script`: script data states or RCDATA?** The HTML script data escape states
+  (`<!--` … `<script>` … `</script>` doesn't end the element) would only matter if an SVG
+  script's content had `<!--` followed by `<script`. In the fully parsed pages, 97 foreign
+  scripts on 47 pages parse differently from today. One has that pattern: an
+  `<svg><script xmlns="">` wrapping SVG path markup, which parses the same either way. Script data
+  plus decoded character references gives the same text as RCDATA for 93 of the 97; the other 4
+  are truncated bodies or character-reference decoding differences (`ha/script_states.py` →
+  `ha/script_states.txt`). Today `<!--` in an SVG script is a comment, so the
+  `document.write('<script>…')` idiom can't be working in SVG content. RCDATA is enough. It also
+  avoids adding character references to the script data states, and it avoids a clash with
+  comment dropping, since `<!--` means "escape" in script data. The one boundary difference left
+  is HTML `<script><!--<script></script>…`; sanitizers drop `script`, so I don't think mXSS can
+  reach it.
 
 Common Crawl (12 seeded WARCs of CC-MAIN-2026-39, 256,037 HTML pages; section 3) agrees: raw
 0.23%, rcdata 0.011%.

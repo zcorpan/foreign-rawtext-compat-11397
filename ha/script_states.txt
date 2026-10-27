@@ -1,0 +1,8 @@
+foreign scripts that differ from today (rcdata mode): 97 on 47 pages
+  ... whose content has <!-- followed by <script: 1
+  https://robertsdaledental.com/ (complete body: True); SVG script starts: "   <g id=\"Group 1000004195\">     <g id=\"Group 1000003764\">       <path id=\"Vecto"
+  differs: https://www.jaisli-xamax.ch/ (complete body: False; <!-- in it: False; named refs: [])
+  differs: https://www.artetessilesamugheo.it/ (complete body: False; <!-- in it: False; named refs: [])
+  differs: https://www.mac.de/ (complete body: False; <!-- in it: False; named refs: ['&amp;', '&gt;', '&lt;', '&quot;'])
+  differs: https://www.returnpro.com/ (complete body: True; <!-- in it: False; named refs: ['&gt;', '&quot;'])
+script data + decoded refs vs RCDATA: 93 same, 4 differ

@@ -88,9 +88,50 @@ def _make_lt_state(orig, base_name):
                     return True
                 for c in reversed(got):
                     self.stream.unget(c)
+                if self.parser._fr_mode == "rcdata-dc" and base_name == "rcdataState":
+                    c1 = self.stream.char()
+                    if c1 == "-":
+                        c2 = self.stream.char()
+                        if c2 == "-":
+                            self.state = self._frCommentDropState
+                            return True
+                        self.stream.unget(c2)
+                    self.stream.unget(c1)
             self.stream.unget(data)
         return orig(self)
     return state
+
+
+def _comment_drop_state(self):
+    """rcdata-dc mode: drop everything up to and including the next "-->", but stop (without
+    consuming) at "</" so the appropriate end tag still ends the element."""
+    data = self.stream.char()
+    if data == EOF:
+        return False
+    if data == "-":
+        c2 = self.stream.char()
+        if c2 == "-":
+            c3 = self.stream.char()
+            if c3 == ">":
+                self.parser._fr_info["comments_dropped"] = self.parser._fr_info.get("comments_dropped", 0) + 1
+                self.state = self.rcdataState
+                return True
+            self.stream.unget(c3)
+        self.stream.unget(c2)
+        return True
+    if data == "<":
+        c2 = self.stream.char()
+        if c2 == "/":
+            self.temporaryBuffer = ""
+            self.state = self.rcdataEndTagOpenState
+            return True
+        self.stream.unget(c2)
+        return True
+    self.stream.charsUntil(("-", "<"))
+    return True
+
+
+T._frCommentDropState = _comment_drop_state
 
 
 T.rawtextLessThanSignState = _make_lt_state(T.rawtextLessThanSignState, "rawtextState")
@@ -101,7 +142,7 @@ T.scriptDataLessThanSignState = _make_lt_state(T.scriptDataLessThanSignState, "s
 class Parser(html5lib.HTMLParser):
     def __init__(self, mode):
         super().__init__(tree=html5lib.getTreeBuilder("etree"), namespaceHTMLElements=True)
-        assert mode in ("old", "raw", "rcdata")
+        assert mode in ("old", "raw", "rcdata", "rcdata-dc")
         self._fr_mode = mode
         self._fr_new = mode != "old"
 
@@ -126,7 +167,7 @@ def _patched_start_tag(orig):
                 if parser._fr_new:
                     tok = parser.tokenizer
                     tok._fr_cdata = False
-                    if parser._fr_mode == "rcdata" and name != "plaintext":
+                    if parser._fr_mode.startswith("rcdata") and name != "plaintext":
                         tok.state = tok.rcdataState
                     elif name in RAWTEXT:
                         tok.state = tok.rawtextState

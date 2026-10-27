@@ -1,0 +1,45 @@
+totals {'html': 256037, 'too_big': 321, 'has_svg_or_math_tag': 128124, 'prefiltered': 126228, 'no-foreign-elements': 105248, 'ok': 20980}
+
+== mode raw
+pages differs any: 578
+pages differs svg:script: 2
+pages differs svg:style: 561
+pages differs svg:title: 15
+pages has svg:script: 61
+pages has svg:style: 7136
+pages has svg:title: 15233
+pages with-foreign-element: 20980
+elements ('svg:script', 'differs') 2
+elements ('svg:script', 'same') 114
+elements ('svg:style', 'differs') 1495
+elements ('svg:style', 'same') 36216
+elements ('svg:title', 'differs') 118
+elements ('svg:title', 'same') 120850
+pages-with-cause ('svg:style', 'charrefs') 548
+pages-with-cause ('svg:title', 'old-comment-children') 12
+pages-with-cause ('svg:style', 'old-comment-children') 12
+pages-with-cause ('svg:title', 'text-differs-other') 2
+pages-with-cause ('svg:script', 'charrefs') 2
+pages-with-cause ('svg:style', 'cdata-markers') 1
+pages-with-cause ('svg:style', 'text-differs-other') 1
+pages-with-cause ('svg:title', 'old-element-children') 1
+
+== mode rcdata
+pages differs any: 28
+pages differs svg:style: 13
+pages differs svg:title: 15
+pages has svg:script: 61
+pages has svg:style: 7136
+pages has svg:title: 15233
+pages with-foreign-element: 20980
+elements ('svg:script', 'same') 116
+elements ('svg:style', 'differs') 33
+elements ('svg:style', 'same') 37678
+elements ('svg:title', 'differs') 118
+elements ('svg:title', 'same') 120850
+pages-with-cause ('svg:title', 'old-comment-children') 12
+pages-with-cause ('svg:style', 'old-comment-children') 12
+pages-with-cause ('svg:title', 'text-differs-other') 2
+pages-with-cause ('svg:style', 'cdata-markers') 1
+pages-with-cause ('svg:style', 'text-differs-other') 1
+pages-with-cause ('svg:title', 'old-element-children') 1

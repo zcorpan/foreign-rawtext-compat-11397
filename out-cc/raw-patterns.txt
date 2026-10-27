@@ -1,0 +1,14 @@
+536 charrefs: Wix [data-color=&quot;N&quot;] e.g. https://de.adultandgeriatricautism.com/copy-of-about
+12 title: old-comment-children e.g. https://reebelo.ca/collections/lenovo-thinkpad-x1-carbon-gen-6-laptop-14-inch
+11 style: old-comment-children e.g. https://thehalara.co.uk/products/278448
+4 charrefs (style): &quot; e.g. https://holiday.saga.co.uk/holidays/africa/seychelles?icid=STG%7CafricaLP%7Cdest
+3 charrefs (style): &amp; e.g. https://www.daera-ni.gov.uk/publications/derryleckagh-assi
+2 title: text-differs-other e.g. https://el.hotels.com/ho491255/pandora-s-forest-adults-only-krosbil-enomenes-pol
+2 charrefs (style): &#x27; e.g. https://fr.comfortzoneskin.com/collections/ampoules-visage
+2 charrefs (script): &amp; e.g. https://tochka.net/tags/ovsyanye-khlopya/
+1 charrefs (style): &nbsp; e.g. https://www.uwgb.edu/wisconsin-caregiver-academy/
+1 style: old-comment-children,cdata-markers e.g. https://nursing.knust.edu.gh/node/24
+1 charrefs (style):  e.g. https://paneco-ltd.ru/catalog/rn-metry
+1 charrefs (style): &apos; e.g. https://vichymonamour.fr/offres/apero-concert-du-conservatoire-de-vichy-communau
+1 style: text-differs-other e.g. https://nemthuanviet.com/nem-khach-san-nha-nghi
+1 title: old-element-children e.g. https://www.rierataylor.com/port-verd/

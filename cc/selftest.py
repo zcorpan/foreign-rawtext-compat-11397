@@ -35,3 +35,7 @@ for c in ["<svg><style><![CDATA[a &amp; b &copy=1]]> &amp; </style></svg>"]:
     for m in ("old", "raw", "rcdata"):
         doc, info = frparse.parse(c, m)
         print(m, [kids(r["etree"]) for r in info["elements"]])
+for c in ["<svg><style>.a<!-- -->{<!-- -->fill:none<!-- -->}</style></svg>", "<svg><title>4.5<!-- --> <!-- -->out</title></svg>", "<svg><style>a<!-- </style><img src=x onerror=alert(1)> -->b</style></svg>", "<svg><style>a<!-- x"]:
+    for m in ("old", "rcdata", "rcdata-dc"):
+        doc, info = frparse.parse(c, m)
+        print(m, [kids(r["etree"]) for r in info["elements"]], [e.tag.split('}')[-1] for e in doc.iter() if isinstance(e.tag, str)])

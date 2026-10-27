@@ -4,3 +4,5 @@ out*/shots/
 *.log
 .publish-terms
 *.part
+out-cc/CC-*.jsonl
+out-cc/dc.jsonl

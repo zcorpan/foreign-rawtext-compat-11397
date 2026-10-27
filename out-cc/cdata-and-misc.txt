@@ -1,0 +1,10 @@
+('all', 'svg:script') elements 116 pages 61
+('all', 'svg:style') elements 37711 pages 7136
+('all', 'svg:title') elements 120968 pages 15233
+('cdata', 'svg:script', 'same') elements 18 pages 12
+('cdata', 'svg:style', 'differs') elements 1 pages 1
+('cdata', 'svg:style', 'same') elements 341 pages 102
+('cdata', 'svg:title', 'same') elements 3 pages 3
+('self-closing', 'svg:script') elements 24 pages 20
+('self-closing', 'svg:style') elements 29 pages 17
+('self-closing', 'svg:title') elements 1090 pages 88

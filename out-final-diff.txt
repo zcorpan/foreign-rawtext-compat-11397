@@ -1,0 +1,104 @@
+== out-rcdata-m2
+rcdata-000 same
+rcdata-001 https://reebelo.ca/collections/lenovo-thinkpad-x1- 1 el diffs; title child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: ['Error: Minified React error #418; visit https://reactjs.org/docs/error', 'Error: Minified React error #423; visit https://reactjs.org/docs/error']
+rcdata-002 same
+rcdata-003 same
+rcdata-004 same
+rcdata-005 https://fr.masterlock.com/products/product/S32YLW 2 el diffs; title text: "Rechercher" -> "<!-- mp_trans_schedule_disable_start 6 -->Rechercher<!-- mp_trans_sche" | new errors: []
+rcdata-006 https://nursing.knust.edu.gh/node/24 1 el diffs; style text: "\n/* ><!--*/\n.st0{fill:#E64028;}\n\t.st1{fill:#E6E5E7" -> "\n<!--/*-->/* ><!--*/\n.st0{fill:#E64028;}\n\t.st1{fill:#E6E5E7;}\n\t.st2{fi" | new errors: []
+rcdata-007 https://reebelo.com/collections/apple-iphone-13-pr 4 el diffs; title child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: ['Error: Minified React error #418; visit https://reactjs.org/docs/error', 'Error: Minified React error #423; visit https://reactjs.org/docs/error']
+rcdata-008 https://www.geogebra.org/m/dWU5nDQf 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-009 https://institchu.com/shop/product/institchu-white 6 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-010 same
+rcdata-011 https://protesolutio.com/tag/rule-45/ 1 el diffs; style text: "\n\t\t\n\t\t.bsshp { fill: #4e4e4e } \n\t" -> "\n\t\t<!-- tspan { white-space:pre } -->\n\t\t.bsshp { fill: #4e4e4e } \n\t" | new errors: []
+rcdata-012 https://www.geogebra.org/m/rxput2p4 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-013 https://www.kbb.com/chevrolet/silverado-1500-crew- 5 el diffs; title text: "Facebook" -> "<!--t.6.96.6.0-->FacebookFacebook"; title text: "LinkedIn" -> "<!--t.6.114.6.0-->LinkedInLinkedIn"; title text: "RSS" -> "<!--t.6.106.6.0-->RSSRSS" | new errors: ['TypeError: NetworkError when attempting to fetch resource.']
+rcdata-014 https://www.xtool.cn/ 1 el diffs; title text: "箭头图标1" -> "<!--t.161.62.8.0-->箭头图标1箭头图标1" | new errors: []
+rcdata-015 https://institchu.com/shop/product/hank-in-chief-a 6 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-016 same
+rcdata-017 https://www.planeo.ch/de/zubehoer.html 1 el diffs; style text: "" -> "<!--\n.cls-1 {\n                                    fill: #6d3b36;\n     " | new errors: []
+rcdata-018 https://perm.alkesta.ru/med/filter/marka-is-c122/a 11 el diffs; title text: "in_cart" -> "in_cart</noindex>" | new errors: []
+rcdata-019 https://nonfiction.film/en/movie/Spitak/ 2 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-020 https://www.restauratiefonds.nl/zakelijk/financier 2 el diffs; style text: "\n    .icon-burger {\n      overflow: visible;\n    }" -> "\n    .icon-burger {\n      overflow: visible;\n    }\n    .icon-burger li" | new errors: []
+rcdata-021 same
+rcdata-022 https://www.kbb.com/nissan/nv2500-hd-cargo/2017/sl 5 el diffs; title text: "Facebook" -> "<!--t.6.96.6.0-->FacebookFacebook"; title text: "LinkedIn" -> "<!--t.6.114.6.0-->LinkedInLinkedIn"; title text: "RSS" -> "<!--t.6.106.6.0-->RSSRSS" | new errors: []
+rcdata-023 https://www.tiendamat.com/2025/05/05/normativas-y- 2 el diffs; title text: "" -> "<?php _e('Cart', 'la-teva-web'); ?>" | new errors: []
+rcdata-024 https://www.geogebra.org/m/ut9AQ2Yt 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-025 https://www.geogebra.org/m/xqag8gdq 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-026 https://www.rierataylor.com/port-verd/ 10 el diffs; title text: "\n                                Cuartos de baño  " -> "\n                                m<sup>2</sup> Construidos            "; title text: "\n                                Terreno m2       " -> "\n                                Cuartos de baño                      "; title text: "\n                                Terreno m2       " -> "\n                                Terreno m<sup>2</sup>                " | new errors: []
+rcdata-027 https://www.tractorsupply.com/tsc/product/rescue!- 0 el diffs;  | new errors: []
+== out-rcdata-m3
+rcdata-000 same
+rcdata-001 https://reebelo.ca/collections/lenovo-thinkpad-x1- 1 el diffs; title child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: ['Error: Minified React error #418; visit https://reactjs.org/docs/error', 'Error: Minified React error #423; visit https://reactjs.org/docs/error']
+rcdata-002 same
+rcdata-003 same
+rcdata-004 same
+rcdata-005 https://fr.masterlock.com/products/product/S32YLW 2 el diffs; title child nodes ['#comment', '#text', '#comment'] -> ['#text'] | new errors: []
+rcdata-006 https://nursing.knust.edu.gh/node/24 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text'] | new errors: []
+rcdata-007 https://reebelo.com/collections/apple-iphone-13-pr 4 el diffs; title child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: ['Error: Minified React error #418; visit https://reactjs.org/docs/error', 'Error: Minified React error #423; visit https://reactjs.org/docs/error']
+rcdata-008 https://www.geogebra.org/m/dWU5nDQf 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-009 https://institchu.com/shop/product/institchu-white 6 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-010 https://www.universalproductionmusic.com/en-nl/sea 0 el diffs;  | new errors: []
+rcdata-011 https://protesolutio.com/tag/rule-45/ 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text'] | new errors: []
+rcdata-012 https://www.geogebra.org/m/rxput2p4 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-013 https://www.kbb.com/chevrolet/silverado-1500-crew- 5 el diffs; title text: "Facebook" -> "FacebookFacebook"; title text: "LinkedIn" -> "LinkedInLinkedIn"; title text: "RSS" -> "RSSRSS" | new errors: []
+rcdata-014 https://www.xtool.cn/ 1 el diffs; title text: "箭头图标1" -> "箭头图标1箭头图标1" | new errors: []
+rcdata-015 https://institchu.com/shop/product/hank-in-chief-a 6 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-016 same
+rcdata-017 https://www.planeo.ch/de/zubehoer.html 1 el diffs; style child nodes ['#comment'] -> [] | new errors: []
+rcdata-018 https://perm.alkesta.ru/med/filter/marka-is-c122/a 11 el diffs; title text: "in_cart" -> "in_cart</noindex>" | new errors: []
+rcdata-019 https://nonfiction.film/en/movie/Spitak/ 2 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-020 https://www.restauratiefonds.nl/zakelijk/financier 2 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text'] | new errors: []
+rcdata-021 same
+rcdata-022 same
+rcdata-023 https://www.tiendamat.com/2025/05/05/normativas-y- 2 el diffs; title text: "" -> "<?php _e('Cart', 'la-teva-web'); ?>" | new errors: []
+rcdata-024 https://www.geogebra.org/m/ut9AQ2Yt 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-025 https://www.geogebra.org/m/xqag8gdq 1 el diffs; style child nodes ['#text', '#comment', '#text'] -> ['#text', '#text', '#text'] | new errors: []
+rcdata-026 https://www.rierataylor.com/port-verd/ 20 el diffs; title text: "\n                                Cuartos de baño  " -> "\n                                m<sup>2</sup> Construidos            "; title text: "\n                                Dormitorios      " -> "\n                                Cuartos de baño                      "; title text: "\n                                Dormitorios      " -> "\n                                Terreno m<sup>2</sup>                " | new errors: ['TypeError: NetworkError when attempting to fetch resource.']
+rcdata-027 same
+== out-rawother-m1
+rawother-000 https://www.uwgb.edu/wisconsin-caregiver-academy/ 1 el diffs; style text: ".Arched_x0020_Green{fill:url(#SVGID_1_);stroke:#FF" -> ".Arched_x0020_Green{fill:url(#SVGID_1_);stroke:#FFFFFF;stroke-width:0." | new errors: []
+rawother-001 https://www.daera-ni.gov.uk/publications/derryleck 1 el diffs; style text: "\n      @import url(https://fonts.googleapis.com/cs" -> "\n      @import url(https://fonts.googleapis.com/css2?family=Libre+Bodo" | new errors: []
+rawother-002 https://fr.comfortzoneskin.com/collections/ampoule 0 el diffs;  | new errors: ['Content-Security-Policy: The page’s settings blocked the loading of a ', 'Content-Security-Policy: The page’s settings blocked the loading of a ']
+rawother-003 https://fr.comfortzoneskin.com/products/smoothing- 0 el diffs;  | new errors: ['Content-Security-Policy: The page’s settings blocked the loading of a ', 'Content-Security-Policy: The page’s settings blocked the loading of a ']
+rawother-004 https://paneco-ltd.ru/catalog/rn-metry 2 el diffs; style cssRules 16 -> 14 | new errors: []
+rawother-005 https://pearachutekids.com/livret-cerise-plafond-c 2 el diffs; style text: "@import url(https://fonts.googleapis.com/css2?fami" -> "@import url(https://fonts.googleapis.com/css2?family=Montserrat:wght@6" | new errors: []
+rawother-006 https://holiday.saga.co.uk/holidays/africa/seychel 0 el diffs;  | new errors: ['Error: Minified React error #418; visit https://reactjs.org/docs/error', 'Error: Minified React error #423; visit https://reactjs.org/docs/error']
+rawother-007 https://holiday.saga.co.uk/holidays/europe 0 el diffs;  | new errors: ['Error: Minified React error #418; visit https://reactjs.org/docs/error', 'Error: Minified React error #423; visit https://reactjs.org/docs/error']
+rawother-008 https://vichymonamour.fr/offres/apero-concert-du-c 1 el diffs; style text: ".st0{fill:#f7f7f7}.st1{fill:#e3e3e3}.st2{fill:#003" -> ".st0{fill:#f7f7f7}.st1{fill:#e3e3e3}.st2{fill:#003e50}.st3{font-family" | new errors: []
+rawother-009 https://tochka.net/tags/ovsyanye-khlopya/ 1 el diffs; script text: "!function(t,n){\"object\"==typeof exports&&\"undefine" -> "!function(t,n){\"object\"==typeof exports&amp;&amp;\"undefined\"!=typeof m" | new errors: ["SyntaxError: expected expression, got '&'"]
+rawother-010 https://www.ecorys.com/it/case-studies/costs-and-b 1 el diffs; script text: "\n!function(t,n){\"object\"==typeof exports&&\"undefin" -> "\n!function(t,n){\"object\"==typeof exports&amp;&amp;\"undefined\"!=typeof " | new errors: ["SyntaxError: expected expression, got '&'"]
+rawother-011 https://www.daera-ni.gov.uk/publications/northern- 1 el diffs; style text: "\n      @import url(https://fonts.googleapis.com/cs" -> "\n      @import url(https://fonts.googleapis.com/css2?family=Libre+Bodo" | new errors: []
+rawother-012 same
+rawother-013 same
+== out-wix-m1
+wix-000 same
+wix-001 same
+wix-002 https://www.intelligentie.com.br/rede-cidades/camp 4 el diffs; style text: "#comp-m9aauh3f_r_comp-m34ug2zw svg [data-color=\"1\"" -> "#comp-m9aauh3f_r_comp-m34ug2zw svg [data-color=&quot;1&quot;] {fill: #"; style text: "#comp-m9hczbyq_r_comp-m9eohjak7__item-j9plerjk svg" -> "#comp-m9hczbyq_r_comp-m9eohjak7__item-j9plerjk svg [data-color=&quot;1"; style text: "#comp-m9hczbyq_r_comp-m9eohjak7__item-j9ples3e svg" -> "#comp-m9hczbyq_r_comp-m9eohjak7__item-j9ples3e svg [data-color=&quot;1" | new errors: []
+wix-003 same
+wix-004 same
+wix-005 same
+wix-006 same
+wix-007 same
+wix-008 https://www.kopmn.org/news-events/tags/tv 1 el diffs; style text: "#comp-mjyn9e7i svg [data-color=\"1\"] {fill: #000000" -> "#comp-mjyn9e7i svg [data-color=&quot;1&quot;] {fill: #000000;}" | new errors: []
+wix-009 same
+wix-010 same
+wix-011 same
+wix-012 same
+wix-013 same
+wix-014 same
+wix-015 same
+wix-016 same
+wix-017 same
+wix-018 same
+wix-019 same
+wix-020 same
+wix-021 https://www.spinplaygames.com/amazinglinkchristmas 4 el diffs; style text: "#comp-mh3r1wc71 svg [data-color=\"1\"] {fill: #00000" -> "#comp-mh3r1wc71 svg [data-color=&quot;1&quot;] {fill: #000000;}"; style text: "#comp-mh3r1wdb svg [data-color=\"1\"] {fill: #FFFFFF" -> "#comp-mh3r1wdb svg [data-color=&quot;1&quot;] {fill: #FFFFFF;}"; style text: "#comp-mh3r1wdl11 svg [data-color=\"1\"] {fill: #FFFF" -> "#comp-mh3r1wdl11 svg [data-color=&quot;1&quot;] {fill: #FFFFFF;}\n#comp" | new errors: []
+wix-022 same
+wix-023 https://www.jkktileinc.com/post/tile-care-and-main 6 el diffs; style text: "#comp-m0zz0hwk_r_comp-m0wiy5ma3 svg [data-color=\"1" -> "#comp-m0zz0hwk_r_comp-m0wiy5ma3 svg [data-color=&quot;1&quot;] {fill: "; style text: "#comp-m0zz0hwk_r_comp-m0wiy5mf6 svg [data-color=\"1" -> "#comp-m0zz0hwk_r_comp-m0wiy5mf6 svg [data-color=&quot;1&quot;] {fill: "; style text: "#comp-m0zz0hwk_r_comp-m0wiy5mn5 svg [data-color=\"1" -> "#comp-m0zz0hwk_r_comp-m0wiy5mn5 svg [data-color=&quot;1&quot;] {fill: " | new errors: []
+wix-024 https://www.advansystems.ru/ga500/ga50c2056aba 0 el diffs;  | new errors: ['AbortError: The operation was aborted. ']
+wix-025 same
+wix-026 same
+wix-027 same
+wix-028 same
+wix-029 same

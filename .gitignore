@@ -6,3 +6,5 @@ out*/shots/
 *.part
 out-cc/CC-*.jsonl
 out-cc/dc.jsonl
+out-*/review/
+*.log

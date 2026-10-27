@@ -1,0 +1,37 @@
+import sys
+sys.path.insert(0, ".")
+import frparse
+from xml.etree import ElementTree as ET
+
+def kids(e):
+    out = []
+    if e.text: out.append(("#text", e.text))
+    for k in e:
+        out.append((k.tag.split("}")[1] if isinstance(k.tag, str) else "#comment", "".join(k.itertext()) if isinstance(k.tag, str) else k.text))
+        if k.tail: out.append(("#text", k.tail))
+    return out
+
+cases = [
+    "<svg><style>a &gt; b {}</style><rect/></svg>",
+    "<svg><style><![CDATA[ .a > .b{fill:red} ]]></style><rect/></svg>",
+    "<svg><style><![CDATA[a]]> b <![CDATA[c]]>]]></style></svg>",
+    "<svg><script><![CDATA[ if (a && b) x[y[0]]>1; ]]></script></svg>",
+    "<svg><script>x[y[0]]>1</script></svg>",
+    "<svg><script><!--\nfoo()\n--></script></svg>",
+    "<svg><style/><rect/></svg>",
+    "<svg><style>.a{}</svg><p>after",
+    "<svg><title><b>x</b> &amp; y</title></svg>",
+    "<style><![CDATA[a]]></style>",
+    "<svg><script><![CDATA[ s='</script>' ]]></script></svg>",
+    "<svg><style><![CDATA</style></svg>",
+    "<svg><script><!-- x --></script></svg>",
+]
+for c in cases:
+    for new in ("old", "raw", "rcdata"):
+        doc, info = frparse.parse(c, new)
+        recs = [(r["name"], r.get("ns"), r["switched"], kids(r["etree"]) if r.get("etree") is not None else None) for r in info["elements"]]
+        print(new, repr(c), recs, info["cdata_open"], info["cdata_close"], info["eof_state"])
+for c in ["<svg><style><![CDATA[a &amp; b &copy=1]]> &amp; </style></svg>"]:
+    for m in ("old", "raw", "rcdata"):
+        doc, info = frparse.parse(c, m)
+        print(m, [kids(r["etree"]) for r in info["elements"]])

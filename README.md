@@ -162,6 +162,37 @@ pages with `</plaintext` after a `<plaintext>` would change.
 So no page in either corpus would change. Ending the element at `</plaintext>` also removes the
 need for `plaintext` to switch to PLAINTEXT in foreign content.
 
+Why pages write it: none of the uses found is a security feature. Each one stops the rest of the
+page from rendering:
+
+- The forum platform writes `</head><body style="display:none"><plaintext>` only when a same-host
+  parent that is itself framed embeds the page, which stops the forum from nesting inside itself.
+  With a cross-origin parent, reading `parent.document` throws, the error is caught, and nothing
+  is written, so it isn't a clickjacking defense.
+- The mobile switchers (WompMobile, and 163.com's own) write a hidden `<plaintext>` on phones so
+  the desktop page stops parsing and loading, then load the mobile site.
+- tesera.io's static one hides leftover loader markup.
+
+What follows `<plaintext>` is always the page's own markup. Where it includes user content
+(forum posts), that content renders as normal HTML whenever the condition doesn't hold, so an
+early `</plaintext>` gives an injector nothing new.
+
+mXSS: this goes in the opposite direction from #11397. PLAINTEXT is the one mode where nothing in
+the text can become markup on a reparse. With an end tag, `plaintext` gets the same weakness as
+`xmp` and `style`: text that contains `</plaintext>` breaks out when it's serialized (literally)
+and reparsed. Such text can come from DOM APIs, or from today's parsers during the transition:
+`<plaintext></plaintext><img src=x onerror=…>` gives text containing `</plaintext><img …>`. The
+transition case only bites sanitizers that allow `plaintext`. DOMPurify and sanitize-html don't
+by default, and DOMPurify's literal-text guard already removes a `plaintext` whose text looks like
+markup.
+
+If the problem is `plaintext` in foreign content, two options keep the namespaces consistent
+without adding a vector, and neither corpus has any SVG/MathML `plaintext`:
+
+- keep PLAINTEXT there, as all three modes do;
+- make `plaintext` a breakout tag in foreign content (like `p` or `div`), so it's always the HTML
+  element.
+
 ## Not covered
 
 - Desktop pages and non-root pages.

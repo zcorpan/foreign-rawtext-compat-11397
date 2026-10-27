@@ -140,6 +140,28 @@ its differing pages are in `out-rcdata-m2`, `out-rcdata-m3`, `out-wix-m1` and `o
 | differs, raw | 578 |
 | differs, rcdata | 28 |
 
+## 4. HTML `<plaintext>` as a normal raw text element
+
+Question: would ending HTML `<plaintext>` at `</plaintext>` (like `xmp`) be web compatible? Only
+pages with `</plaintext` after a `<plaintext>` would change.
+
+- Common Crawl (`cc/plaintext_scan.py` → `out-cc/plaintext.jsonl`): 0 of 255,716 HTML pages have a
+  `plaintext` element in static markup. 34 write one with `document.write` to swallow the rest of
+  the page: 30 forum pages when framed, 2 mobile-site switchers, 2 others. None has `</plaintext`
+  anywhere after it.
+- HTTP Archive, 2026-10-01, root pages (`queries/plaintext.sql` → `queries/plaintext.csv`): the
+  `element_count` custom metric counts the rendered DOM by tag name, so it includes
+  `document.write`. It finds `plaintext` on 6 of 15,366,242 mobile pages and 3 of 11,650,352
+  desktop pages, 7 sites in all. In live copies (fetched 2026-10-27), tesera.io has a static
+  `<plaintext style="display: none;">`, and toothcorner.com, theatreinminneapolis.com and
+  sinexsystems.com use mobile-switcher `document.write`. None has `</plaintext`.
+  petugas.haji.go.id served a 1 KB page and scuonlinebanking.com no longer has `<plaintext>`, so
+  those two couldn't be checked.
+- No SVG/MathML `<plaintext>` occurs in either corpus (`queries/kinds.csv`, `out-cc/summary.txt`).
+
+So no page in either corpus would change. Ending the element at `</plaintext>` also removes the
+need for `plaintext` to switch to PLAINTEXT in foreign content.
+
 ## Not covered
 
 - Desktop pages and non-root pages.
@@ -161,3 +183,4 @@ All on the 2026-10-01 crawl, run 2026-10-27:
 | `queries/kinds.csv` | 0.5 GB |
 | blocks copy for download | 3.2 GB |
 | bodies copy for selected pages | 268 GB |
+| `queries/plaintext.sql` (both clients) | 11.2 GB |

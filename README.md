@@ -13,7 +13,8 @@ it in the other (namespace-confusion mXSS). Three variants, plus a fourth in sec
 - **rcdata-dc** (mode 3): rcdata, plus everything from `<!--` to the next `-->` is dropped from
   the text. An end tag inside still ends the element.
 - **rcdata-c** (html5lib only, section 6): rcdata, but `<!--`…`-->` is parsed as a comment node,
-  as today. An end tag inside still ends the comment and the element.
+  as today. An end tag inside still ends the comment and the element. PIs should be kept as nodes
+  the same way. The html5lib patch doesn't do that, which only affects the 11 pages with PIs.
 
 All three variants also drop `<![CDATA[` and the next `]]>` inside these elements, and don't
 decode character references between them. The element's end tag still ends it even inside the
@@ -272,15 +273,20 @@ Correction: earlier versions of this README gave 327 pages for rcdata-dc text ch
 metric compared text truncated to 400 characters, which hid changes in long SVG scripts. The
 exact count is 346.
 
-PIs (`<?target data?>`, which the spec now parses outside raw text elements) could be kept as
-nodes the same way, with the end tag still closing the element. The security argument is the
-same as for comments. The benefit is small: PIs occur inside these elements on 11 of the
-downloaded HTTP Archive bodies (10 SVG `title`, 1 `style`; `ha/patterns-rcdata.txt`) and on 1
-Common Crawl page (`out-cc/pi-and-cdata-endtag.txt`). All of them are unprocessed `<?php … ?>` in
-SVG `<title>`, where RCDATA turns them into tooltip text. Today's baseline also varies: engines
-without HTML PI parsing (the Firefox build used here) make a bogus comment, while the spec makes a
-PI node. Keeping PIs would need PI states inside foreign RCDATA in every parser. Bogus comments
-(`<!foo>`), which also make comment nodes today, are rarer still inside these elements.
+PIs (`<?target data?>`) should be kept as nodes the same way, with the end tag still closing the
+element. HTML now parses PIs outside raw text elements (whatwg/html#12118), for use with
+`<template for>` (whatwg/html#11818), and whatwg/html#13100 would allow `<template>` in
+SVG/MathML. It would be unexpected if PIs worked in most SVG elements but not in SVG `<title>`,
+where comments work. The security argument is the same as for comments: a parser-created PI can't
+contain the end tag, so a reparse as the HTML element yields only text.
+
+Compat doesn't need it today: PIs occur inside these elements on 11 of the downloaded HTTP Archive
+bodies (10 SVG `title`, 1 `style`; `ha/patterns-rcdata.txt`) and on 1 Common Crawl page
+(`out-cc/pi-and-cdata-endtag.txt`). All of them are unprocessed `<?php … ?>` in SVG `<title>`.
+Keeping PIs as nodes leaves those as they are today, where text would show the PHP source in the
+tooltip. Engines without HTML PI parsing yet (the Firefox build used here) make a bogus comment
+there today. Bogus comments (`<!foo>`), which also make comment nodes today, are rarer still
+inside these elements.
 
 ## Not covered
 

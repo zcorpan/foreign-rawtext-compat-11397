@@ -28,7 +28,7 @@ HTTP Archive, 2026-10-01 crawl, mobile, root pages, main documents: 15,360,905 p
 | raw | ~225,800 (1.47%), essentially all Wix | icons recolored on 5/100 Wix pages → ~11,300 pages (95% CI 3,700–25,500) |
 | rcdata | 1,449 (0.0094%) | 1/100 → ~14 pages (CI 0–79), plus 3 pages with an unclosed element |
 | rcdata-dc | 1,449: 346 (0.0023%) with other changes, 1,103 that lose only comment nodes | 0/100 (CI 0–52), plus the same 3 pages |
-| rcdata-c | ~343 (0.0022%) | not run live; the DOM matches rcdata-dc's apart from comment nodes, plus the same 3 pages |
+| rcdata-c | 348 (0.0023%) | not run live; the DOM matches rcdata-dc's apart from comment nodes, plus the same 3 pages |
 
 What's behind it:
 
@@ -253,7 +253,7 @@ in HTML. html5lib's patch: `cc/frparse.py` (mode `rcdata-c`).
   text in HTML `style` does today).
 - Compat, exact child-node comparison with today on the 7,621 downloaded HTTP Archive bodies
   (`ha/mode_c.py` → `ha/mode_c.txt`, `ha/mode_c.json`):
-  - rcdata: 1,450 differ.
+  - rcdata: 1,450 differ. Section 1's count is 1,449, because it compares text and child kinds rather than exact child nodes.
   - rcdata-dc: 1,449 differ. 346 have changes other than lost comment nodes; 1,103 only lose
     comment nodes; 7 are truncated-body artifacts (`ha/dc_exact.py` → `ha/dc_exact.txt`).
   - rcdata-c: 348 differ, 5 more are truncated-body artifacts, and the other 7,268 match today

@@ -4,7 +4,7 @@ Proposed change: in foreign content, a non-self-closing start tag for `style`, `
 `textarea`, `xmp`, `iframe`, `noembed`, `noframes`, `noscript` or `plaintext` still creates the
 SVG/MathML element, but switches the tokenizer so its contents can't become markup. Then
 something that was text in one namespace can't parse as markup after a serialize and reparse puts
-it in the other (namespace-confusion mXSS). Three variants:
+it in the other (namespace-confusion mXSS). Three variants, plus a fourth in section 6:
 
 - **raw** (pref mode 1): exactly like the HTML element (RAWTEXT, script data, RCDATA for
   `title`/`textarea`, PLAINTEXT). The raw text elements' text also serializes literally.
@@ -12,6 +12,8 @@ it in the other (namespace-confusion mXSS). Three variants:
   are still decoded, and serialization is unchanged (escaped).
 - **rcdata-dc** (mode 3): rcdata, plus everything from `<!--` to the next `-->` is dropped from
   the text. An end tag inside still ends the element.
+- **rcdata-c** (html5lib only, section 6): rcdata, but `<!--`…`-->` is parsed as a comment node,
+  as today. An end tag inside still ends the comment and the element.
 
 All three variants also drop `<![CDATA[` and the next `]]>` inside these elements, and don't
 decode character references between them. The element's end tag still ends it even inside the
@@ -25,7 +27,8 @@ HTTP Archive, 2026-10-01 crawl, mobile, root pages, main documents: 15,360,905 p
 |---|---|---|
 | raw | ~225,800 (1.47%), essentially all Wix | icons recolored on 5/100 Wix pages → ~11,300 pages (95% CI 3,700–25,500) |
 | rcdata | 1,449 (0.0094%) | 1/100 → ~14 pages (CI 0–79), plus 3 pages with an unclosed element |
-| rcdata-dc | 327 (0.0021%) with text changes; 1,122 more lose only comment nodes | 0/100 (CI 0–52), plus the same 3 pages |
+| rcdata-dc | 1,449: 346 (0.0023%) with other changes, 1,103 that lose only comment nodes | 0/100 (CI 0–52), plus the same 3 pages |
+| rcdata-c | ~343 (0.0022%) | not run live; the DOM matches rcdata-dc's apart from comment nodes, plus the same 3 pages |
 
 What's behind it:
 
@@ -235,6 +238,49 @@ trailing context, which hides an element-of-interest start tag right after it (e
 differs (`ha/regex_recall.py` → `ha/regex_recall.txt`), it flags 548 of 550 raw-only pages and 26
 of 28 rcdata pages. One of the two rcdata misses is an html5lib artifact. So the HTTP Archive
 counts in section 1 may undercount by a few percent.
+
+## 6. Keeping comments as comment nodes, and PIs
+
+Variant **rcdata-c**: like rcdata, but `<!--`…`-->` inside these elements is parsed as a comment
+node, as today. Between CDATA markers it stays text, as in a CDATA section today. The element's
+end tag still ends the comment and then the element. `<!-->` and `<!--->` are empty comments, as
+in HTML. html5lib's patch: `cc/frparse.py` (mode `rcdata-c`).
+
+- mXSS: as with rcdata-dc, a comment created by the parser can never contain the element's end
+  tag. It serializes literally, and a reparse as the HTML element yields only text.
+  `<svg><title>a<!-- </title><img src=x> -->b` gives an `img`, as HTML `<title>` would. A comment
+  created through the DOM with the end tag inside can still break out, as in every variant (and as
+  text in HTML `style` does today).
+- Compat, exact child-node comparison with today on the 7,621 downloaded HTTP Archive bodies
+  (`ha/mode_c.py` → `ha/mode_c.txt`, `ha/mode_c.json`):
+  - rcdata: 1,450 differ.
+  - rcdata-dc: 1,449 differ. 346 have changes other than lost comment nodes; 1,103 only lose
+    comment nodes; 7 are truncated-body artifacts (`ha/dc_exact.py` → `ha/dc_exact.txt`).
+  - rcdata-c: 348 differ, 5 more are truncated-body artifacts, and the other 7,268 match today
+    exactly.
+- So the 1,103 pages where rcdata-dc only drops comment nodes are identical to today with
+  rcdata-c. Those are React's `<!-- -->` text separators, Angular/Lit markers and kbb.com's
+  `<!--t.…-->`. The React hydration errors and the duplicated titles seen live in rcdata-dc
+  probably come from the missing comment nodes, so they should go away. Not checked in a browser.
+- The rest are the same pages rcdata-dc changes beyond comments: tags, PIs and SVG scripts with a
+  raw `<` all become text, and unclosed elements swallow the page. One page differs only in a
+  comment: on cral.ehess.fr an unclosed `<!--` in SVG `<style>` swallows `</style>` and the
+  following SVG paths today. With rcdata-c the comment ends at `</style>` and the paths render.
+- Common Crawl: 5 of the 28 rcdata pages still differ with rcdata-c.
+
+Correction: earlier versions of this README gave 327 pages for rcdata-dc text changes. That
+metric compared text truncated to 400 characters, which hid changes in long SVG scripts. The
+exact count is 346.
+
+PIs (`<?target data?>`, which the spec now parses outside raw text elements) could be kept as
+nodes the same way, with the end tag still closing the element. The security argument is the
+same as for comments. The benefit is small: PIs occur inside these elements on 11 of the
+downloaded HTTP Archive bodies (10 SVG `title`, 1 `style`; `ha/patterns-rcdata.txt`) and on 1
+Common Crawl page (`out-cc/pi-and-cdata-endtag.txt`). All of them are unprocessed `<?php … ?>` in
+SVG `<title>`, where RCDATA turns them into tooltip text. Today's baseline also varies: engines
+without HTML PI parsing (the Firefox build used here) make a bogus comment, while the spec makes a
+PI node. Keeping PIs would need PI states inside foreign RCDATA in every parser. Bogus comments
+(`<!foo>`), which also make comment nodes today, are rarer still inside these elements.
 
 ## Not covered
 

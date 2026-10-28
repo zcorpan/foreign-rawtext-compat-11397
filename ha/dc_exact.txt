@@ -1,0 +1,1 @@
+{'same': 6165, 'comment nodes only': 1103, 'text changes': 346, 'truncated only': 7}

@@ -1,0 +1,2 @@
+ha {'rcdata differs': 1450, 'rcdata same': 6165, 'rcdata truncated-only': 6, 'rcdata-c differs': 348, 'rcdata-c same': 7268, 'rcdata-c truncated-only': 5, 'rcdata-dc differs': 1450, 'rcdata-dc same': 6165, 'rcdata-dc truncated-only': 6}
+cc {'rcdata differs': 28, 'rcdata same': 550, 'rcdata-c differs': 5, 'rcdata-c same': 573, 'rcdata-dc differs': 28, 'rcdata-dc same': 550}

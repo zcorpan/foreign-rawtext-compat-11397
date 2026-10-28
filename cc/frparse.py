@@ -89,18 +89,85 @@ def _make_lt_state(orig, base_name):
                 for c in reversed(got):
                     self.stream.unget(c)
                 # As in the Gecko patch, comments between CDATA markers aren't dropped.
-                if self.parser._fr_mode == "rcdata-dc" and base_name == "rcdataState" and not getattr(self, "_fr_cdata", False):
+                if self.parser._fr_mode in ("rcdata-dc", "rcdata-c") and base_name == "rcdataState" and not getattr(self, "_fr_cdata", False):
                     c1 = self.stream.char()
                     if c1 == "-":
                         c2 = self.stream.char()
                         if c2 == "-":
-                            self.state = self._frCommentDropState
+                            if self.parser._fr_mode == "rcdata-c":
+                                self._fr_comment = ""
+                                self._fr_comment_started = False
+                                self.state = self._frCommentKeepState
+                            else:
+                                self.state = self._frCommentDropState
                             return True
                         self.stream.unget(c2)
                     self.stream.unget(c1)
             self.stream.unget(data)
         return orig(self)
     return state
+
+
+def _comment_keep_state(self):
+    """rcdata-c mode: like a comment, but an appropriate end tag inside ends the comment (emitted
+    as is) and then the element. "<!-->" and "<!--->" are empty comments, as in HTML."""
+    buf = self._fr_comment
+    data = self.stream.char()
+    if data == EOF:
+        self.tokenQueue.append({"type": tokenTypes["Comment"], "data": buf})
+        return False
+    started = getattr(self, "_fr_comment_started", False)
+    self._fr_comment_started = True
+    if data == ">" and not started:
+        self.tokenQueue.append({"type": tokenTypes["Comment"], "data": ""})
+        self.state = self.rcdataState
+        return True
+    if data == "-":
+        c2 = self.stream.char()
+        if c2 == ">" and not started:
+            self.tokenQueue.append({"type": tokenTypes["Comment"], "data": ""})
+            self.state = self.rcdataState
+            return True
+        if c2 == "-":
+            c3 = self.stream.char()
+            if c3 == ">":
+                self.tokenQueue.append({"type": tokenTypes["Comment"], "data": buf})
+                self.state = self.rcdataState
+                return True
+            self.stream.unget(c3)
+        self.stream.unget(c2)
+        self._fr_comment = buf + "-"
+        return True
+    if data == "<":
+        c2 = self.stream.char()
+        if c2 == "/":
+            # Only an appropriate end tag ends the element; peek at the name.
+            name = self.currentToken["name"] if self.currentToken else ""
+            got = self.stream.char() if name else ""
+            peek = got
+            while len(peek) < len(name):
+                ch = self.stream.char()
+                if ch is EOF:
+                    break
+                peek += ch
+            nxt = self.stream.char()
+            for ch in reversed(peek + (nxt if nxt is not EOF else "")):
+                self.stream.unget(ch)
+            if name and peek.lower() == name and nxt in ("\t", "\n", "\x0c", " ", "/", ">"):
+                self.tokenQueue.append({"type": tokenTypes["Comment"], "data": buf})
+                self.temporaryBuffer = ""
+                self.state = self.rcdataEndTagOpenState
+                return True
+            self._fr_comment = buf + "</"
+            return True
+        self.stream.unget(c2)
+        self._fr_comment = buf + "<"
+        return True
+    self._fr_comment = buf + data + self.stream.charsUntil(("-", "<"))
+    return True
+
+
+T._frCommentKeepState = _comment_keep_state
 
 
 def _comment_drop_state(self):
@@ -143,7 +210,7 @@ T.scriptDataLessThanSignState = _make_lt_state(T.scriptDataLessThanSignState, "s
 class Parser(html5lib.HTMLParser):
     def __init__(self, mode):
         super().__init__(tree=html5lib.getTreeBuilder("etree"), namespaceHTMLElements=True)
-        assert mode in ("old", "raw", "rcdata", "rcdata-dc")
+        assert mode in ("old", "raw", "rcdata", "rcdata-dc", "rcdata-c")
         self._fr_mode = mode
         self._fr_new = mode != "old"
 

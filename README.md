@@ -166,6 +166,31 @@ In review images, today is on the left.
     DOMPurify and sanitize-html don't by default, and DOMPurify's literal-text guard covers it.
   - No SVG/MathML `plaintext` occurs in either corpus, hence breakout for it.
 
+## Transition risk for stored and server-side sanitized content
+
+Once an updated browser ends SVG/MathML `title`, `style`, `script` and `noscript` at their end
+tag, HTML that was sanitized and stored under today's parsing is parsed differently than when it
+was sanitized. A sanitizer that inspected it with a parser where those elements can contain
+elements, comments or CDATA sections may have kept text that contains the element's end tag. In an
+updated browser that text ends the element and what follows becomes markup. Client-side
+sanitizing and inserting in the same browser has no gap: both parses use the same rules, once one
+browser ships.
+
+What a sanitizer, or the pipeline around it, needs so stored content isn't affected:
+- Drop comments, or at least comments (and PIs) whose data looks like markup, inside SVG/MathML
+  `title`/`style`. Keep nothing that contains an end tag of a raw text or RCDATA element.
+- Escape `<` and `>` in attribute values when serializing, as the HTML Standard does since
+  whatwg/html#6362. Without that, an attribute value can contain the end tag.
+- Serialize CDATA sections' content as escaped text, not literally.
+- Store the sanitizer's reserialized output, not the validated original input. Pipelines that
+  check "did sanitizing change anything?" and then keep the original are only as safe as the
+  validation.
+- Don't allow raw text and RCDATA elements whose end tag can appear in their text, in any
+  namespace, unless their text is checked for markup (DOMPurify's literal-text guard does this).
+
+Sanitizer maintainers can add the checks above independently of the change, so they can be in
+place before browsers ship it.
+
 ## Method
 
 | Step | Files |

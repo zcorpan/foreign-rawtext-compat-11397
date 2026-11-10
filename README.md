@@ -257,3 +257,7 @@ Common Crawl live runs: `out-rcdata-m2`, `out-rcdata-m3`, `out-wix-m1`, `out-raw
 2026-10-01 crawl, run 2026-10-27: `queries/candidates.sql` 7.29 TB; totals 271 GB; kinds 0.5 GB;
 blocks copy 3.2 GB; bodies copy for selected pages 268 GB; `queries/plaintext.sql` (both
 clients) 11.2 GB; `queries/breakout-candidates.sql` (restored candidate table) 0.6 GB.
+
+## Reproduce
+
+This run was done with the [`httparchive` skill](https://github.com/zcorpan/web-platform-skills/blob/main/docs/httparchive.md). The steps above are standalone and rerun the same analysis without the skill.

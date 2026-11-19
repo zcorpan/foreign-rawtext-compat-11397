@@ -48,9 +48,15 @@ stays exposed to the old classes until old browsers go away (see "Transition ris
 Fuzzed in Chrome Canary 160 (today's parsing, which has HTML PIs and `template for`; 4M baseline cases and 5.5M with PI
 and patching content; `fuzz/RESULTS.md`), and #13100 read from its diff (not implemented in any engine yet).
 
-- **PIs alone add no class.** A parser-made PI ends at its first `>`, so it can't hold an end tag, and every finding signature
-  that contains a PI still occurs with `<?` replaced by `<!`. 29 PI shapes in 16 containers round-trip unchanged. DOM-built PIs
-  with `>` in the data still don't (M9).
+- **PIs alone add no class in today's Chrome.** Every finding signature that contains a PI still occurs with `<?` replaced by
+  `<!`, and 29 PI shapes in 16 containers round-trip unchanged. DOM-built PIs with `>` in the data still don't (M9).
+- **PIs can carry the start of an end tag, for the proposal.** Today's parser ends a PI at its first `>`, so its data can hold
+  `</title` followed by whitespace or `/` (or end with `</title`, the `>` being the PI's own terminator). The serializer adds
+  `?>`: data ending in `</title` becomes `</title?>`, which tokenizes as a tag named `title?`, so that case is defused (verified).
+  `</title x`, `</title ` and `</title/` become `</title x?>` and so on, which a proposal tokenizer reads as an end tag, ending
+  the PI and the element, and the text after it becomes markup (verified in mode 4, with `<?` read as a bogus comment). A PI
+  parsed under the proposal can't hold those, so this is the stored-content and old-parser class (M4), and the serializer rules
+  must test PIs for `</name` followed by whitespace, `/` or `>`, not for the plain end tag.
 - **Patching adds one class, and it is live in Canary today.** A patch builds trees the parser can't: HTML elements
   under SVG/MathML parents, because the template contents are parsed as HTML and inserted under the marker's parent. When the
   patched element is a raw-text element (`xmp`, `style`, `iframe`, `noembed`, `noframes`, `plaintext`, `script`) its text is
@@ -118,7 +124,8 @@ Limits:
    `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too, and drops element, comment and PI children of `script`: a nested `script` element's end tag would end an HTML `script` early). The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
 3. Make the default serializer omit a comment or PI child of an SVG/MathML `title`, `style`, `script` or `noscript` whose
-   data contains the element's end tag. This covers `template for` patches and DOM-built trees with one rule. Elements and
+   data contains the start of the element's end tag (`</name` followed by whitespace, `/` or `>`; for a PI the serializer's
+   trailing `?` defuses data that merely ends in `</name`). This covers `template for` patches and DOM-built trees with one rule. Elements and
    text patched into these elements are fine: elements reparse as text, the benign direction. Ship it with the parser
    change, not before: today the parser does produce such comments (cral.ehess.fr is one page), so a default rule that
    shipped first would change `innerHTML` for parser-built trees and need its own compat analysis. Before the parser

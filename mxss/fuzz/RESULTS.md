@@ -112,9 +112,10 @@ PI/template-for constructs; 458,000 cases contained a `template for` that patche
 
 Conclusions:
 - PIs alone add no mXSS class. No finding needs PI parsing without `template for`. Of the 18 minimized finding signatures that contain a PI but no
-  patching, all still produced a finding after replacing `<?` by `<!`, so the PI was incidental. A parser-made PI cannot hold the end tag of a
-  raw/RCDATA/foreign element, because it ends at its first `>`; it can hold at most an unterminated start tag. I found no case where that
-  becomes live. PIs are text inside RCDATA/RAWTEXT, so within one engine there is no PI-vs-bogus-comment pivot.
+  patching, all still produced a finding after replacing `<?` by `<!`, so the PI was incidental. Correction (added later): today's parser can make a PI whose data holds `</name`
+  followed by whitespace or `/`, which after the serializer's `?>` is an end tag for a parser that implements the proposal; that is the
+  stored-content class, not covered by this baseline run (see mxss/README.md). Data that only ends in `</name` is defused by the
+  serializer's `?`. In this baseline no case became live. PIs are text inside RCDATA/RAWTEXT, so within one engine there is no PI-vs-bogus-comment pivot.
 - Parser-made PIs round-trip: 29 PI shapes in 16 containers (div, svg, math, foreign title/style/script, select, table, tr, p,
   template, head, frameset, HTML title/style/textarea): no changes in target or data. Mismatches in the fuzz runs have three causes:
   PIs that are children of the Document or `head` aren't in `body.innerHTML`; marker and range-marker PIs are consumed by patching (so counts

@@ -180,7 +180,7 @@ function genPrune(rng) {
   const names = pool.filter(n => chance(rng, q));
   for (const n of ['svg', 'math', 'style', 'title', 'p', 'a', 'b', 'div', 'span', 'img', 'table', 'form', 'mtext', 'mglyph']) if (chance(rng, 0.6)) names.push(useNs ? R(rng, ['h', 's', 'm']) + ':' + n : n);
   const attrs = chance(rng, 0.5) ? null : ATTRS.concat(['alt', 'src', 'width', 'height']).filter(() => chance(rng, 0.75));
-  return {names, ns: useNs, attrs, mode: R(rng, ['drop', 'unwrap', 'unwrap']), comments: chance(rng, 0.5)};
+  return {names, ns: useNs, attrs, mode: R(rng, ['drop', 'unwrap', 'unwrap']), comments: chance(rng, 0.5), pis: chance(rng, 0.4)};
 }
 function applyPrune(root, p) {
   const allowN = new Set(p.names), denyN = p.deny ? new Set(p.deny) : null, allowA = p.attrs ? new Set(p.attrs) : null;
@@ -188,6 +188,7 @@ function applyPrune(root, p) {
     for (let c = parent.firstChild; c;) {
       const next = c.nextSibling;
       if (c.nodeType === 8) { if (!p.comments) parent.removeChild(c); }
+      else if (c.nodeType === 7) { if (!p.pis) parent.removeChild(c); }
       else if (c.nodeType === 1) {
         const tc = (c.localName === 'template' && c.namespaceURI === NS.h && c.content) ? c.content : null;
         proc(c); if (tc) proc(tc);
@@ -256,6 +257,9 @@ function mkCtx(spec) {
 }
 const WRAP = ['xmp', 'iframe', 'noembed', 'noframes', 'noscript', 'style', 'textarea', 'title', 'select', 'table', 'svg', 'math', 'template', 'plaintext'];
 function parseIn(ctx, s) {
+  if (ctx === 'u:doc') { const d = Document.parseHTMLUnsafe(s); return {root: d, pruneRoot: d.body, ser: () => d.body ? (SEROPT.js ? jsSer(d.body) : d.body.innerHTML) : ''}; }
+  if (ctx === 'u:h:div') { const el = mkCtx('h:div'); el.setHTMLUnsafe(s); return {root: el, pruneRoot: el, ser: () => SEROPT.js ? jsSer(el) : el.innerHTML}; }
+  if (ctx === 'dw') { const d = document.implementation.createHTMLDocument(''); d.open(); d.write(s); d.close(); return {root: d, pruneRoot: d.body, ser: () => d.body ? (SEROPT.js ? jsSer(d.body) : d.body.innerHTML) : ''}; }
   if (ctx.startsWith('w:')) {
     const nm = ctx.slice(2), el = mkCtx('h:div');
     el.innerHTML = '<' + nm + '>' + s + (nm === 'plaintext' ? '' : '</' + nm + '>');
@@ -269,10 +273,11 @@ function parseIn(ctx, s) {
   const tpl = el.localName === 'template' && el.namespaceURI === NS.h;
   return {root: el, pruneRoot: tpl ? el.content : el, ser: () => SEROPT.js ? jsSer(el) : el.innerHTML};
 }
-function scan(root, names, live) {
+function scan(root, names, live, pis) {
   const stack = [root];
   while (stack.length) {
     const n = stack.pop();
+    if (names) { if (n.nodeType === 7) { names.set('#pi', (names.get('#pi') || 0) + 1); if (pis) pis.push(n.target + '\u0001' + n.data); } else if (n.nodeType === 8) names.set('#cmt', (names.get('#cmt') || 0) + 1); }
     if (n.nodeType === 1) {
       const key = nsKey(n) + ':' + n.localName;
       let isLive = false;
@@ -364,6 +369,76 @@ function genTargeted(rng, force) {
   if (chance(rng, 0.3)) genItem(rng, 1, out);
   return out;
 }
+
+// ---------- PI and `template for` generators (Chrome: PIs parse as nodes, template for patches) ----------
+const PI_SHAPES = ['<?x>', '<?x ?>', '<?x?>', '<??>', '<?>', '<? x?>', '<?foo bar?>', '<?x y>?>d', '<?x\ny?>', '<?x/>', '<?xml version="1.0"?>', '<?x a="b" ?>', '<?x ??>', '<?x ???>', '<?X Y?>', '<?-x y?>', '<?1 y?>', '<?x:y z?>', '<?xé y?>', '<?x \u0000y?>'];
+const MARK_NAMES = ['m', 'm', 'm', 'M', 'm ', 'a', 'x y'];
+function piWithPayload(rng) {
+  const P = () => payload(rng);
+  const r = rng();
+  if (r < 0.12) return '<?x ' + P() + '?>';
+  if (r < 0.24) return '<?x ' + P() + '>';
+  if (r < 0.34) return '<?x>' + P();
+  if (r < 0.42) return '<?x ?>' + P();
+  if (r < 0.5) return '<?' + P() + '?>';
+  if (r < 0.58) return '<?x a="' + P() + '"?>';
+  if (r < 0.66) return '<?x ?' + P() + '>';
+  if (r < 0.74) return '<?x>' + R(rng, ['?>', '-->', ']]>']) + P();
+  if (r < 0.82) return '<?' + R(rng, ['marker', 'start', 'end', 'x']) + ' name="' + P() + '"?>';
+  if (r < 0.9) return '<?marker name=m ' + P() + '?>';
+  return R(rng, PI_SHAPES) + P();
+}
+function markerPi(rng) {
+  const nm = R(rng, MARK_NAMES), r = rng();
+  const q = R(rng, ['"', "'", '']);
+  const tgt = chance(rng, 0.85) ? 'marker' : R(rng, ['MARKER', 'Marker', 'start', 'end']);
+  const body = tgt.toLowerCase() === 'end' ? '' : ' name=' + q + nm.trim() + q;
+  return '<?' + tgt + body + R(rng, ['?>', '?>', '>', ' ?>']);
+}
+function rangeMarkers(rng) { return ['<?start name=m?>', R(rng, ['stuff', '<b>', '<!--x-->', payload(rng)]), R(rng, ['<?end?>', '<?end>', '<?start name=m?><?end?><?end?>', ''])]; }
+function tfContent(rng, host, out) {
+  const n = 1 + Math.floor(rng() * 3);
+  for (let i = 0; i < n; i++) {
+    const r = rng(), closer = '</' + caseVar(rng, host) + R(rng, ['>', ' >', '/>']);
+    if (r < 0.2) out.push(R(rng, CMT_START), closer + (chance(rng, 0.8) ? payload(rng) : ''), R(rng, CMT_END));
+    else if (r < 0.35) out.push(piWithPayload(rng));
+    else if (r < 0.5) out.push(startTag(rng, pickName(rng)), chance(rng, 0.5) ? payload(rng) : 'x', endTag(rng, pickName(rng)));
+    else if (r < 0.6) out.push(closer + payload(rng));
+    else if (r < 0.7) out.push(startTag(rng, R(rng, RAW)), closer, payload(rng));
+    else if (r < 0.78) out.push('<template for=m>', R(rng, ['x', '<b>']), '</template>');
+    else if (r < 0.86) out.push('<template>', payload(rng), '</template>');
+    else genItem(rng, 1, out);
+  }
+}
+const TF_HOSTS = ['title', 'style', 'script', 'noscript', 'textarea', 'xmp', 'iframe', 'noembed', 'noframes', 'select', 'table', 'tr', 'tbody', 'colgroup', 'div', 'p', 'desc', 'foreignObject', 'mtext', 'annotation-xml', 'template', 'svg', 'math', 'option', 'plaintext', 'a', 'b'];
+function genPiTf(rng) {
+  const out = [];
+  const nPiv = Math.floor(rng() * 3);
+  for (let i = 0; i < nPiv; i++) out.push(R(rng, PIVOTS));
+  const wrap = R(rng, ['', '', 'svg', 'math', 'svg', 'math']);
+  if (wrap) out.push('<' + wrap + '>');
+  const host = R(rng, TF_HOSTS);
+  if (chance(rng, 0.7)) out.push(startTag(rng, host));
+  const k = rng();
+  if (k < 0.55) out.push(markerPi(rng));
+  else if (k < 0.7) out.push(...rangeMarkers(rng));
+  else if (k < 0.85) out.push(piWithPayload(rng));
+  else out.push(R(rng, PI_SHAPES));
+  if (chance(rng, 0.3)) out.push(piWithPayload(rng));
+  if (chance(rng, 0.5)) out.push(endTag(rng, host));
+  if (chance(rng, 0.4)) genItem(rng, 1, out);
+  const nt = chance(rng, 0.1) ? 0 : 1 + Math.floor(rng() * 2.3);
+  for (let t = 0; t < nt; t++) {
+    const attrsx = R(rng, ['', '', ' shadowrootmode=open', ' id=t', ' x']);
+    out.push('<template for=' + R(rng, ['"m"', 'm', "'m'", '"M"', '"m "', '""', 'm']) + attrsx + '>');
+    tfContent(rng, host, out);
+    if (chance(rng, 0.9)) out.push('</template>');
+    if (t === 0 && chance(rng, 0.15)) out.push(markerPi(rng)); // marker after the template
+  }
+  if (chance(rng, 0.4)) out.push(payload(rng));
+  return out;
+}
+
 const DOMRAW = ['title', 'style', 'script', 'noscript', 'textarea', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext', 'svg', 'math', 'div'];
 function genDom(rng) {
   const ns = R(rng, ['h', 's', 'm']), name = R(rng, DOMRAW), kids = [];
@@ -411,8 +486,10 @@ function evalSpec(spec, wantAll) {
   const S = t1.ser();
   if (S.length > 20000) return {discard: 1};
   if (!S.includes(MARK) && !spec.keepAll) return {noCanary: 1, S};
-  const names1 = lens(t1.root);
-  const res = {findings: [], struct: null, S};
+  let tfNote = null;
+  if (spec.tokens && spec.tokens.length) { const inp = spec.tokens.join(''); const tin = (inp.match(/<template[^>]*\sfor\b/gi) || []).length; if (tin) { const q = t1.root.querySelectorAll ? t1.root.querySelectorAll('template[for]').length : 0; tfNote = tin > q ? 'patched' : 'unpatched'; } }
+  const pis1 = []; const names1 = new Map(); scan(t1.root, names1, null, pis1);
+  const res = {findings: [], struct: null, S, tfNote};
   const paths = spec.path ? [spec.path] : null;
   const t2list = paths ? [paths[0][0]] : spec.t2;
   let carrier = null;
@@ -436,6 +513,7 @@ function evalSpec(spec, wantAll) {
     if (c2 === spec.t1 && !spec.prune && !spec.dom && res.struct === null) {
       const d = diffNames(names1, n2);
       if (d.length) res.struct = d.slice(0, 3).join(',');
+      if (names1.get('#pi')) { const p2 = []; scan(t2.root, new Map(), null, p2); const a = pis1.slice().sort().join('\u0002'), b = p2.sort().join('\u0002'); if (a !== b) res.piRT = pis1.length !== p2.length ? 'count ' + pis1.length + '>' + p2.length : 'data-changed'; }
     }
     const deep = paths ? paths[0].slice(1) : (spec.deep || []);
     if (deep.length) {
@@ -511,10 +589,12 @@ function genSpec(rng, cfg) {
   }
   if (state.seeds.length && r < cfg.pSeed) { kind = 'seed'; toks = seedTokens(rng, R(rng, state.seeds)); }
   else if (state.corpus.length > 20 && r < cfg.pSeed + cfg.pMutate) { kind = 'mutate'; toks = mutate(rng, R(rng, state.corpus), state.corpus, state.seedToks); }
+  else if (!cfg.noPitf && rng() < cfg.pPitf) { kind = 'pitf'; toks = genPiTf(rng); }
   else if (cfg.tk || rng() < cfg.pTarget) { kind = 'target'; toks = genTargeted(rng, cfg.tk); }
   else { kind = 'grammar'; toks = genGrammar(rng); }
+  if (cfg.noPitf) toks = toks.filter(t => !/<\?/.test(t) && !/<template[^>]*\sfor\b/i.test(t));
   if (kind !== 'grammar' && chance(rng, 0.5) && !toks.some(t => t.includes(MARK))) ensurePayload(rng, toks);
-  if (kind === 'grammar' || kind === 'target') ensurePayload(rng, toks);
+  if (kind === 'grammar' || kind === 'target' || kind === 'pitf') ensurePayload(rng, toks);
   { let k = 0; toks = toks.map(t => t.replace(/X7Q\d*/g, () => MARK + (k++))); }
   const spec = {tokens: toks, t1: R(rng, cfg.t1), t2: cfg.t2, kind, ser: cfg.ser};
   if (cfg.t2sample && cfg.t2.length > cfg.t2sample) {
@@ -537,7 +617,7 @@ const FZ = {
   setSeeds(list) { state.seeds = list; state.seedToks = list.slice(0, 500).map(s => (s.match(/<!--[\s\S]*?-->|<[^>]*>|[^<]+|</g) || [])); },
   // opts: base, start, n, timeMs, skip (array of sigs not to sample), maxSamples
   run(opts) {
-    const cfg = Object.assign({t1: DEFAULT_T1, t2: DEFAULT_T2, pSeed: 0.15, pMutate: 0.35, pPrune: 0.25, pDeep: 0.3, t2sample: 8, pTarget: 0.25, pDom: 0.04}, opts.cfg || {});
+    const cfg0 = {t1: DEFAULT_T1, t2: DEFAULT_T2, pSeed: 0.15, pMutate: 0.35, pPrune: 0.25, pDeep: 0.3, t2sample: 8, pTarget: 0.25, pDom: 0.04, pPitf: 0, noPitf: false, t2extra: []}; const cfg = Object.assign(cfg0, opts.cfg || {}); if (cfg.t2extra.length) cfg.t2 = cfg.t2.concat(cfg.t2extra);
     if (!state.seeds.length) cfg.pSeed = 0;
     const skip = new Set(opts.skip || []);
     const st = {cases: 0, discard: 0, noCanary: 0, findingCases: 0, struct: {}, sigs: {}, t1: {}, depth: {}, kinds: {}, errors: 0};
@@ -558,6 +638,8 @@ const FZ = {
       if (r.discard) { st.discard++; continue; }
       if (r.noCanary) { st.noCanary++; continue; }
       st.t1[spec.t1] = (st.t1[spec.t1] || 0) + 1;
+      if (r.tfNote) { st.tf = st.tf || {}; st.tf[r.tfNote] = (st.tf[r.tfNote] || 0) + 1; }
+      if (r.piRT) { st.piRT = st.piRT || {}; st.piRT[r.piRT] = (st.piRT[r.piRT] || 0) + 1; }
       if (r.struct) {
         st.struct[r.struct] = (st.struct[r.struct] || 0) + 1;
         if (!state.structSeen.has(r.struct) || (chance(rng, 0.02) && state.corpus.length < 3000)) {

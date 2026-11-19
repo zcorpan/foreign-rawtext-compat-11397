@@ -43,7 +43,13 @@ def make(engine, binary=None, mode=0, script_timeout=120, profile_root=None):
         o.binary_location = binary or CANARY
         o.add_argument("--headless=new")
         o.add_argument("--no-sandbox")
-        d = webdriver.Chrome(options=o, service=CrService(chromedriver()))
+        env = dict(os.environ)
+        if profile_root:
+            profile_root = os.path.abspath(profile_root)
+            os.makedirs(profile_root, exist_ok=True)
+            o.add_argument("--user-data-dir=" + profile_root)
+            env["TMPDIR"] = profile_root
+        d = webdriver.Chrome(options=o, service=CrService(chromedriver(), env=env))
     elif engine == "safari":
         d = webdriver.Safari()
     else:

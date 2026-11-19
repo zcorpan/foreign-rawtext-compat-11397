@@ -7,6 +7,8 @@ def bucket(r):
     sp = r["spec"]; pc = r["sig"].split(":")[0]
     if pc in ("wrap", "dom", "rawctx"): return pc
     t = "".join(sp.get("tokens") or [])
+    if re.search(r"<template[^>]*\sfor\b", t, re.I): return "template-for patch" + (" (with PI/marker)" if "<?" in t else "")
+    if re.search(r"<\?(?!>)", t) and pc != "dom" and os.environ.get("PIBUCKET"): return "PI construct"
     if re.search(r"<!--\s*<script", t, re.I): return "script-double-escape vs foreign script"
     if re.search(r"<" + BRK + r"\b[^>]*/>", t, re.I): return "self-closed breakout element, reparsed as breakout"
     if re.search(r"<\?", t): return "PI-like"

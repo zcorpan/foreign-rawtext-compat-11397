@@ -21,9 +21,11 @@ leaves three parser-producible corners, two of which the spec PR can close:
 | 2 | HTML `script` text (script data double-escape, or `<?`/bogus-comment prefix) vs foreign RCDATA `script`: one text node in HTML, split at the first end tag after a namespace pivot. Needs a sanitizer that keeps `script`. Also appears in the RCDATA-only modes | yes | accepted as an exception (decided): closing it would need script data states with character references, which makes `<!--` text in SVG scripts, or about 10 or more new states for comment nodes that track the double-escape state. Sanitizers that keep `script` must reject text containing `<!--` or `<script`, and drop its element, comment and PI children |
 | 3 | HTML `noscript` parsed with scripting off (markup children) vs foreign `noscript` (RCDATA always), after a namespace pivot | partly: #9426 fixes it inside one browser; server-side libraries that default to scripting off still differ | depends on #9426's final text |
 
-Also found by reading the spec (not reproduced: the build has no PIs, `template for` or declarative shadow DOM):
+Also found by reading the spec (the Firefox build has no PIs, `template for` or declarative shadow DOM; the patching
+itself was confirmed by hand in Chrome Canary 160):
 `template for` patching can put a comment or PI node into a foreign RCDATA element, and a comment from a patch
-(parsed outside the element) can contain the end tag; the spec needs a rule keeping patches out of these elements.
+(parsed outside the element) can contain the end tag. Restricting patching isn't needed: only a comment or PI
+whose data contains the element's end tag matters, and the serializer can omit those (suggested change 3).
 Fragment parsing with a foreign context element (`title`, `style`, `script`, `noscript`; the six breakout elements)
 must be namespace-aware.
 
@@ -79,7 +81,9 @@ Limits:
 2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing
    `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too, and drops element, comment and PI children of `script`: a nested `script` element's end tag would end an HTML `script` early). The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
-3. Add a rule that `template for` patching never inserts comments, PIs or elements into a foreign RCDATA element.
+3. Make the default serializer omit a comment or PI child of an SVG/MathML `title`, `style`, `script` or `noscript` whose
+   data contains the element's end tag. This covers `template for` patches and DOM-built trees with one rule. Elements and
+   text patched into these elements are fine: elements reparse as text, the benign direction.
 4. Make fragment parsing's context-element handling namespace-aware for these elements.
 5. Corner 3: define #9426 so only a browser whose user or sandbox actually disabled scripting parses with the flag off,
    and everything else (including `DOMParser`, `createHTMLDocument`, fragment parsing and server-side parsers)

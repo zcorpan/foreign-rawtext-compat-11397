@@ -11,8 +11,8 @@ PY = os.path.join(HERE, "..", "..", ".venv", "bin", "python")
 FX = os.path.expanduser("~/src/firefox-foreign-rawtext/obj-aarch64-apple-darwin27.0.0/dist/Nightly.app/Contents/MacOS/firefox")
 SEEDS = os.path.join(PRIV, "seeds-all.jsonl")
 steps = []
-def add(label, engine, binary, mode, seeds, workers, cases, cfg=None, seconds=3000):
-    steps.append(dict(label=label, engine=engine, binary=binary, mode=mode, seeds=seeds, workers=workers, cases=cases, cfg=cfg, seconds=seconds))
+def add(label, engine, binary, mode, seeds, workers, cases, cfg=None, seconds=3000, batch=None):
+    steps.append(dict(label=label, engine=engine, binary=binary, mode=mode, seeds=seeds, workers=workers, cases=cases, cfg=cfg, seconds=seconds, batch=batch))
 M4 = os.path.expanduser("~/src/m4-fuzz/Nightly.app/Contents/MacOS/firefox")
 SD = {"pSeed": 0.5, "pMutate": 0.3}
 # (label, engine, binary, mode) in priority order; budgets are cases per worker
@@ -33,6 +33,10 @@ add("ff-m2-noscriptmix", "firefox", FX, 2, None, 2, 100_000, cfg={"allowNoscript
 SC = {"tk": "selfclose", "pSeed": 0, "pMutate": 0.2}
 for label, eng, b, m in (("ff-m4-selfclose", "firefox", M4, 4), ("ff-m0-selfclose", "firefox", FX, 0), ("ff-m3-selfclose", "firefox", FX, 3)):
     add(label, eng, b, m, None, 2, 1_500_000, cfg=SC)
+EP = ["u:doc", "u:h:div", "dw"]
+add("chrome-nopitf", "chrome", None, 0, None, 3, 1_350_000, cfg={"noPitf": True, "t2extra": EP}, batch=10000)
+add("chrome-pitf", "chrome", None, 0, None, 3, 1_350_000, cfg={"pPitf": 0.5, "t2extra": EP}, batch=10000)
+add("chrome-pitf-focus", "chrome", None, 0, None, 3, 500_000, cfg={"pPitf": 0.95, "t2extra": EP}, batch=10000)
 only = sys.argv[sys.argv.index("--only") + 1:] if "--only" in sys.argv else None
 done_f = os.path.join(PRIV, "runs", "campaign.done")
 done = set(open(done_f).read().split()) if os.path.exists(done_f) else set()
@@ -42,6 +46,7 @@ for s in steps:
     cmd = [PY, os.path.join(HERE, "run.py"), "--engine", s["engine"], "--mode", str(s["mode"]), "--label", s["label"], "--workers", str(s["workers"]), "--cases", str(s["cases"]), "--seconds", str(s["seconds"])]
     if s["binary"]: cmd += ["--binary", s["binary"]]
     if s["seeds"]: cmd += ["--seeds", s["seeds"]]
+    if s["batch"]: cmd += ["--batch", str(s["batch"])]
     if s["cfg"]: cmd += ["--cfg", json.dumps(s["cfg"])]
     print("RUN", s["label"], flush=True)
     r = subprocess.run(cmd)

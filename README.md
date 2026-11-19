@@ -8,8 +8,10 @@ This repo measures ways to make them consistent.
 **Where it ended up:** `textarea`, `xmp`, `iframe`, `noembed`, `noframes` and `plaintext` break
 out of foreign content (like `p`). `title`, `style`, `script` and `noscript` stay SVG/MathML
 elements, parsed as RCDATA, with comments and PIs kept as nodes. The element's end tag still
-closes it, even inside a comment, PI or CDATA markers. `<![CDATA[`/`]]>` markers are dropped, and
-self-closing tags keep today's behavior. HTML `<plaintext>` stays PLAINTEXT.
+closes it, even inside a comment, PI or CDATA markers. `<![CDATA[`/`]]>` markers are dropped.
+Self-closing `title`, `style`, `script` and `noscript` keep today's behavior (an empty element); the six
+breakout elements break out whether or not the start tag is self-closing, because the serializer
+writes start and end tags (see `mxss/README.md`). HTML `<plaintext>` stays PLAINTEXT.
 
 ## Variants
 
@@ -25,7 +27,9 @@ In all variants:
 - `<![CDATA[` and the next `]]>` are dropped inside these elements, and character references
   between them aren't decoded.
 - The element's end tag ends it, even inside comments or CDATA markers.
-- Self-closing tags keep today's behavior.
+- Self-closing `title`, `style`, `script` and `noscript` keep today's behavior. The variants above
+  that break elements out (the last row, and the final proposal) do so regardless of the self-closing
+  flag; the live data had no real SVG/MathML element of those six that was self-closing.
 
 ## Results
 
@@ -84,7 +88,9 @@ In review images, today is on the left.
   dropped, they parse as today. No page in either corpus had the element's own end tag inside a
   CDATA section.
 - **Self-closing**: `<svg><title/>`, `<style/>`, `<script/>` etc. occur on ~6k pages (regex).
-  Treating them as start tags would swallow the rest of the page.
+  Treating them as start tags would swallow the rest of the page. That applies to `title`, `style`,
+  `script` and `noscript`. For the six breakout elements the flag must not matter: a self-closed one stays
+  foreign and empty, but serializes with start and end tags, so it would break out on reparse.
 - <a id="5-breaking-out-instead-for-elements-svgmathml-doesnt-need"></a>**Breakout**:
   - Common Crawl's exact parse has none of the seven (the six plus `noscript`) as SVG/MathML
     elements.

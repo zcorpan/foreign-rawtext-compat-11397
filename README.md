@@ -202,7 +202,11 @@ What a sanitizer, or the pipeline around it, needs so stored content isn't affec
   namespace, unless their text is checked for markup (DOMPurify's literal-text guard does this).
 - If `script` is kept at all (including data blocks with a non-JS type), drop or reject any whose
   text contains `<!--` or `<script`, even when the config allows `script`: the HTML script data
-  states let those hide the element's end tag, and foreign `script` ends at the first one.
+  states let those hide the element's end tag, and foreign `script` ends at the first one. Also
+  drop element, comment and PI children of a `script` (they don't affect execution). A nested
+  `script` element serializes with its own end tag, which ends an HTML `script` early and turns the
+  text after it into markup; a comment containing `<script` didn't leak in tests, but dropping
+  comments avoids relying on that.
 - Parse with scripting enabled, and drop `noscript`: a scripting-disabled parser (including a user
   who disabled scripts) reads its children as markup the sanitizer saw as text.
 

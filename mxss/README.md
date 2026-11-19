@@ -77,7 +77,7 @@ Limits:
 
 1. Break out the six elements regardless of the self-closing flag (corner 1).
 2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing
-   `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too). The
+   `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too, and drops element, comment and PI children of `script`: a nested `script` element's end tag would end an HTML `script` early). The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
 3. Add a rule that `template for` patching never inserts comments, PIs or elements into a foreign RCDATA element.
 4. Make fragment parsing's context-element handling namespace-aware for these elements.

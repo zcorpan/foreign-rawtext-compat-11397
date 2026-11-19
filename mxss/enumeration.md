@@ -69,7 +69,7 @@ only. "Closed" is about the proposal + #6362 + #9426.
 |---|---|---|---|---|---|---|
 | 19 | HTML `style`, `script`, `xmp`, `iframe`, `noembed`, `noframes`, `plaintext`, `noscript` (scripting on) with text holding an end tag; literal serialization | D, and P through fragment parsing with a raw context element (`style.innerHTML = ...`, no appropriate end tag in fragments) | T>M | Carrier: raw text. No pivot needed. | No: by design the serializer emits text literally. | High. Firefox dom battery. |
 | 20 | HTML `title`, `textarea` with comment or element children (comments literal, elements literal) | D | comment T>M; element M>T | Carrier: comment data holding the end tag | No. | High. dom battery. |
-| 21 | **Foreign `title`, `style`, `script`, `noscript` with comment, PI or element children, or a foreign `textarea`/`xmp`/... with children at all** | D, and P through `template for` patching into a marker PI inside the element, and through a foreign fragment context if the fragment spec isn't updated (row 22) | T>M | Carrier: comment/PI data or the literal text of an HTML raw child. Pivot: none; same namespace is enough now | **No, and newly dangerous.** Today such children are inert in the same namespace and dangerous only after a namespace pivot. With RCDATA they are dangerous without a pivot. The planned answer is a narrow default serializer rule (omit comment/PI children whose data contains the parent's end tag), shipped together with the parser change (today the parser produces such comments, so shipping it first needs its own compat analysis); flattening children stays in the opt-in serializer mode. | High for DOM-built (Firefox modes 2 and 3 leak, mode 0 doesn't, for comment child, element child holding raw text, PI with `>`). Medium for the `template for` route (spec reading, no engine). |
+| 21 | **Foreign `title`, `style`, `script`, `noscript` with comment, PI or element children, or a foreign `textarea`/`xmp`/... with children at all** | D, and P through `template for` patching into a marker PI inside the element, and through a foreign fragment context if the fragment spec isn't updated (row 22) | T>M | Carrier: comment/PI data or the literal text of an HTML raw child. Pivot: none; same namespace is enough now | **No, and newly dangerous.** Today such children are inert in the same namespace and dangerous only after a namespace pivot. With RCDATA they are dangerous without a pivot. For the `template for` route the planned answer is that patching into these elements inserts only the patch's text content (no default serializer rule: DOM-built trees aren't a goal, and the rule would miss comments nested in patched elements); flattening children stays in the opt-in serializer mode for stored content. | High for DOM-built (Firefox modes 2 and 3 leak, mode 0 doesn't, for comment child, element child holding raw text, PI with `>`). Medium for the `template for` route (spec reading, no engine). |
 | 22 | Fragment parsing with a foreign raw element as context element (`svgStyle.innerHTML`) | P | T>M / structure | Spec text of "initialize an HTML fragment parser" switches on the context element's name, namespace-blind by convention (HTML only); Firefox mode 0 leaves the data state for SVG `style` | Only if the PR also changes this step to RCDATA (the Firefox mode 2 behaviour). Otherwise elements and comments land inside foreign RCDATA elements (row 21). | High (tested; mode 2 and 3 do it). Spec edit needed. |
 | 23 | DOM-only SVG/MathML `textarea`, `xmp`, ... (breakout elements) | D | S, then as row 21 | Pivot: breakout at parse 2 makes them HTML; trailing siblings and ancestors' end tags are read as text for `plaintext` | No (DOM content). Serializer opt-in mode drops them. | Medium-high. |
 
@@ -101,9 +101,9 @@ only. "Closed" is about the proposal + #6362 + #9426.
   rule that rejects a marker whose parent is a foreign `title`, `style`, `script` or `noscript`.
   Fuzzing Chrome Canary 160 found that patched HTML raw-text elements under an SVG/MathML parent are a live M1
   variant today (see `mxss/README.md`, "`template for` and template namespaces"). Confirmed by hand in Chrome Canary 160 that patching into a foreign `title` works, including a
-  comment whose data contains the end tag. Restricting patching isn't needed: the default
-  serializer rule (omit such comments and PIs) covers it and DOM-built trees too.
-  Needs a guard if the proposal lands.
+  comment whose data contains the end tag, and (mode 4) that a comment nested in a patched element child
+  also ends the title on reparse. The answer is in patching: into one of these elements, insert only the
+  patch's text content. DOM-built trees aren't a goal, so there is no default serializer rule.
 - **Declarative shadow DOM (`b9c11c55`, `7fe76d01`, `7da45dfa`, `b973c6ad`).** Row 27. The
   serializer's shadow-host step is written in terms of "current node" before the loop that defines
   it, an editorial slip. `shadowrootcustomelementregistry` is emitted only when registries differ.
@@ -168,8 +168,7 @@ each needing something the proposal doesn't say:
    proposal; needs a sanitizer that keeps `script`).
 2. Row 21/22: foreign RCDATA elements gaining element/comment/PI children, via `template for`
    patching into a marker PI inside them, or via fragment parsing with a foreign context element if
-   that step isn't updated. The first is handled by the default serializer rule, not by restricting
-   patching.
+   that step isn't updated. The first is handled by patching only text into these elements.
 3. Row 6: `noscript` across parsers with different scripting flags, and flag-independent foreign
    `noscript`.
 4. DOM-only content (rows 14, 15, 19 to 21, 23), which the proposal makes broader for foreign raw

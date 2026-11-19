@@ -148,7 +148,8 @@ In review images, today is on the left.
   - The remaining boundary difference, HTML `<script><!--<script></script>…`, is an accepted
     exception: it needs a sanitizer that keeps `script` (any type: a data block's text is still
     script data text). Sanitizers that keep `script` should reject its text when it contains
-    `<!--` or `<script`. Keeping comments as nodes rules out the other options: matching the
+    `<!--` or `<script`, and drop its element, comment and PI children (a nested `script` ends an
+    HTML `script` early when serialized). Keeping comments as nodes rules out the other options: matching the
     HTML extents would need script data states with character references, which makes `<!--` text
     (about 3 pages in the HTTP Archive full parses have a comment in an SVG script, inert today),
     or roughly 10 or more new states so comment nodes track the double-escape state. The Sanitizer

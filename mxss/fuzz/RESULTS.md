@@ -1,0 +1,105 @@
+# Fuzzer results (class level, no payloads)
+
+Oracle, generators and limits: see README.md. Raw logs and minimized repros: `mxss/private/runs/` (git-ignored).
+Case counts are cases generated; "tested" excludes cases discarded because T1 already had a live canary or the
+canary didn't survive serialization. Scripting flag emulated as in README.md.
+
+## Summary
+
+- Mode 4 (the full proposal) with #6362: no finding in the parser-produced HTML-to-HTML space that involves
+  text, comment, PI or attribute carriers and a namespace pivot (M1 to M4 classes), in 12,000,000 from-scratch
+  cases, 2,000,000 seeded, 3,000,000 targeted. Two other mechanisms still work (below), plus the known
+  not-addressed ones (sink wrappers M6, DOM-built trees M9, fragment parsing into raw or foreign-raw context
+  elements, scripting-flag differential M5).
+- Baseline Firefox (mode 0) and Chrome Canary rediscover M1, M3/M7-style comment carriers via structure, M4 (comment/PI
+  holds the end tag in foreign `title`/`style`/`script`/...), M6, M9 from scratch. M2/M3 attribute carriers
+  need pre-#6362 serialization (emulated by the JS serializer without `<`/`>` escaping; 2,100,000 cases).
+- Known-bypass calibration: all 31 published seeds evaluated; mode 0 flags 15, Chrome 13. The remaining seeds are outside
+  what a same-engine canary oracle can express (sanitizer-side parser bugs M15, historic engine bugs M12 to M14,
+  DOM-created nodes M9, parse-time cloning M10, structural-only seeds M7/M11 without a canary).
+
+## What still works under mode 4 (class level)
+
+1. Self-closed breakout element. In SVG/MathML, `textarea`, `xmp`, `iframe`, `noembed`, `noframes` or `plaintext`
+   written self-closing keep today's behavior (stay foreign, empty). The serializer always writes start and end
+   tags, so on reparse the element breaks out of the foreign subtree, and the namespace of what follows
+   (ancestors popped, later `math`/`foreignObject`/`noscript` re-parented to HTML or MathML) changes. Carrier: text of an
+   HTML `plaintext` (or raw element) inside an HTML `noscript` (scripting disabled) in an SVG
+   integration point. Pivot: element identity and namespace flip of an ancestor. Same context, DOMParser document to
+   DOMParser document, no pruning, 82 cases in 3,000,000 targeted cases (9 signatures), 1 case in 12,000,000 untargeted.
+2. HTML `script` text versus foreign RCDATA `script` (enumeration row 5, M16). HTML script data double escape
+   (`<!--` then `<script>`), or a `<?`-style bogus comment in script text, is one text node in an HTML `script`; reparsed as
+   SVG/MathML `script` (RCDATA, comment and PI nodes split out or the first end tag ends it) the remainder becomes markup or
+   the executed text changes. Carrier: HTML script data text. Pivot: namespace of the `script` at parse 2 (foreign
+   fragment context, annotation-xml/foreignObject structure, table foster parenting). Needs an HTML `script` that survives
+   sanitizing. Also present in modes 2 and 3 (RCDATA without comment nodes), so it is introduced by RCDATA tokenization.
+3. HTML `noscript` with scripting disabled versus foreign `noscript` (RCDATA regardless of the flag), with a raw child
+   (`xmp`, `plaintext`, `style`...) holding `</noscript>`: a namespace pivot (`mglyph`/`mtext`/`table` foster parenting)
+   makes the `noscript` foreign on reparse. Seen in mode 4 seeded runs (2 signatures, 26 cases) in DOMParser documents
+   both sides, and in the self-closed runs (3 cases).
+
+Not closed by design, seen in every mode: sink wrappers (M6), DOM-built trees (M9, foreign RCDATA/raw elements with
+comment/PI/element children, row 21), fragment parsing with a raw or foreign-raw context element (rows 19/22), the scripting-flag
+differential when the restriction is lifted (M5, `noscriptmix` runs).
+
+Crashes: 23 content-process crashes in Firefox modes 0 and 4 during long batches (17 and 6); none reproduce
+when the logged case is replayed alone in a fresh browser in modes 0, 2, 3 or 4 (0 of 23 each), so they look
+state- or resource-dependent, not input-determined.
+
+## Calibration (known-bypass seeds, flagged / seeds)
+
+| class | seeds | Firefox mode 0 | Chrome Canary | mode 2 | mode 3 | mode 4 |
+|---|---|---|---|---|---|---|
+| M1 | 3 | 2/3 | 2/3 | 0/3 | 0/3 | 0/3 |
+| M2 | 2 | 2/2 | 2/2 | 0/2 | 0/2 | 0/2 |
+| M3 | 4 | 3/4 | 3/4 | 0/4 | 0/4 | 0/4 |
+| M4 | 1 | 1/1 | 1/1 | 0/1 | 0/1 | 0/1 |
+| M5 | 3 | 2/3 | 1/3 | 2/3 | 2/3 | 2/3 |
+| M6 | 2 | 2/2 | 1/2 | 2/2 | 2/2 | 2/2 |
+| M7 | 3 | 1/3 | 1/3 | 0/3 | 0/3 | 0/3 |
+| M8 | 2 | 1/2 | 1/2 | 0/2 | 0/2 | 0/2 |
+| M9 | 1 | 0/1 | 0/1 | 0/1 | 0/1 | 0/1 |
+| M10 | 2 | 1/2 | 1/2 | 0/2 | 0/2 | 0/2 |
+| M11 | 1 | 0/1 | 0/1 | 0/1 | 0/1 | 0/1 |
+| M12 | 2 | 0/2 | 0/2 | 0/2 | 0/2 | 0/2 |
+| M13 | 1 | 0/1 | 0/1 | 0/1 | 0/1 | 0/1 |
+| M14 | 1 | 0/1 | 0/1 | 0/1 | 0/1 | 0/1 |
+| M15 | 3 | 0/3 | 0/3 | 0/3 | 0/3 | 0/3 |
+| total | 31 | 15/31 | 13/31 | 4/31 | 4/31 | 4/31 |
+
+Notes: modes 2 to 4 still flag M5 (scripting flag, calibration lifts the noscript restriction) and M6 (sink wrappers), as
+the class table predicts. Pre-#6362 emulation (legacy serializer) is used in calibration only.
+
+## Runs
+
+Format: cases (distinct signatures) per mechanism bucket; buckets are heuristic regexes on the minimized repro
+(`fuzz/bucket.py`). `unclassified` in mode 0 and Chrome are the baseline M1/M4 classes. `rawctx`: T1 context is a raw or
+foreign-raw element. `wrap`: sink wrapper. `dom`: DOM-built.
+
+| configuration | cases | tested | crashes | PI-like | attribute carrier | dom | rawctx | script-double-escape vs foreign script | self-closed breakout element, reparsed as breakout | unclassified | unminimized/rawctx | wrap |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ff-m0-scratch | 12,015,451 | 6,384,097 | 7 | 127 (28) | 0 | 207,169 (376) | 392,290 (718) | 0 | 0 | 172,603 (597) | 0 | 90,366 (596) |
+| ff-m2-scratch | 12,000,000 | 7,964,475 | 1 | 0 | 0 | 217,368 (354) | 213,252 (6) | 510 (12) | 0 | 0 | 0 | 25,273 (381) |
+| ff-m3-scratch | 12,000,000 | 7,653,425 | 1 | 0 | 0 | 217,458 (354) | 212,915 (6) | 520 (12) | 0 | 0 | 0 | 25,190 (368) |
+| ff-m4-scratch | 12,000,000 | 7,660,623 | 2 | 0 | 0 | 217,441 (298) | 245,922 (254) | 1,314 (16) | 1 (1) | 0 | 1 (1) | 31,088 (428) |
+| chrome-scratch | 2,000,000 | 1,100,017 | 0 | 15 (11) | 0 | 33,394 (426) | 89,185 (506) | 0 | 0 | 42,408 (404) | 0 | 24,999 (465) |
+| ff-m0-seeded | 2,000,000 | 1,132,388 | 0 | 4 (1) | 109 (8) | 34,456 (350) | 68,930 (533) | 0 | 0 | 29,209 (457) | 0 | 16,976 (472) |
+| ff-m2-seeded | 1,200,000 | 841,035 | 0 | 0 | 0 | 21,804 (320) | 23,321 (6) | 59 (5) | 0 | 0 | 0 | 3,718 (206) |
+| ff-m3-seeded | 1,200,000 | 795,066 | 0 | 0 | 0 | 21,804 (320) | 23,590 (6) | 87 (7) | 0 | 0 | 0 | 4,085 (215) |
+| ff-m4-seeded | 2,000,000 | 1,377,539 | 0 | 39 (4) | 0 | 36,288 (274) | 43,390 (141) | 266 (6) | 12 (2) | 26 (2) | 0 | 7,965 (294) |
+| chrome-seeded | 600,000 | 332,593 | 0 | 28 (1) | 0 | 10,046 (359) | 23,669 (379) | 0 | 0 | 8,993 (251) | 0 | 6,330 (355) |
+| ff-m0-selfclose | 3,000,000 | 1,830,911 | 0 | 14 (3) | 0 | 51,951 (364) | 168,867 (408) | 0 | 38 (10) | 157,102 (424) | 0 | 78,199 (350) |
+| ff-m3-selfclose | 3,000,000 | 2,443,481 | 0 | 0 | 0 | 54,730 (342) | 35,924 (5) | 1 (1) | 0 | 0 | 0 | 45,221 (90) |
+| ff-m4-selfclose | 3,000,000 | 2,493,950 | 0 | 0 | 0 | 54,755 (287) | 50,480 (71) | 0 | 82 (9) | 3 (1) | 0 | 74,163 (147) |
+| ff-m0-noscriptmix | 400,000 | 201,098 | 0 | 6 (5) | 0 | 6,904 (305) | 21,078 (389) | 0 | 0 | 10,304 (278) | 0 | 6,970 (351) |
+| ff-m2-noscriptmix | 200,000 | 136,263 | 0 | 0 | 0 | 3,663 (268) | 5,079 (6) | 59 (2) | 0 | 21 (9) | 0 | 1,399 (137) |
+| ff-m3-noscriptmix | 200,000 | 127,944 | 0 | 0 | 0 | 3,663 (268) | 5,156 (6) | 56 (2) | 0 | 24 (11) | 0 | 1,530 (145) |
+| ff-m4-noscriptmix | 400,000 | 268,911 | 0 | 0 | 0 | 7,279 (233) | 13,706 (139) | 276 (6) | 0 | 22 (11) | 0 | 5,375 (236) |
+| ff-m0-legacyser | 2,100,000 | 1,090,168 | 0 | 56 (29) | 398 (67) | 36,054 (355) | 87,087 (981) | 0 | 2 (2) | 37,391 (391) | 0 | 33,123 (921) |
+
+
+Run names: `scratch` = pure grammar, targeted and mutation generators, no seeds; `seeded` = Common Crawl SVG/MathML blocks and
+the published seeds with injected canaries (4,000 blocks from 4 WARCs of CC-MAIN-2026-39); `selfclose` = targeted
+self-closed-breakout generator; `noscriptmix` = noscript allowed in fragment contexts (scripting flag differs);
+`legacyser` = serializer without `<`/`>` attribute escaping (pre-#6362).
+Totals per Firefox mode (all labels): mode 0 19,515,451, mode 2 13,400,000, mode 3 16,400,000, mode 4 17,400,000 cases.

@@ -83,7 +83,10 @@ Limits:
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
 3. Make the default serializer omit a comment or PI child of an SVG/MathML `title`, `style`, `script` or `noscript` whose
    data contains the element's end tag. This covers `template for` patches and DOM-built trees with one rule. Elements and
-   text patched into these elements are fine: elements reparse as text, the benign direction.
+   text patched into these elements are fine: elements reparse as text, the benign direction. Ship it with the parser
+   change, not before: today the parser does produce such comments (cral.ehess.fr is one page), so a default rule that
+   shipped first would change `innerHTML` for parser-built trees and need its own compat analysis. Before the parser
+   change, server-side sanitizers use the opt-in serializer mode or their own checks.
 4. Make fragment parsing's context-element handling namespace-aware for these elements.
 5. Corner 3: define #9426 so only a browser whose user or sandbox actually disabled scripting parses with the flag off,
    and everything else (including `DOMParser`, `createHTMLDocument`, fragment parsing and server-side parsers)

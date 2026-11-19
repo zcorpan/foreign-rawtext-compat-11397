@@ -26,8 +26,8 @@ itself was confirmed by hand in Chrome Canary 160):
 `template for` patching can put comment, PI and element nodes into a foreign RCDATA element, and the patch content
 (parsed outside the element) can contain the end tag anywhere in its subtree: in a comment or PI, or in the text of a raw-text
 element, which the serializer emits literally. A comment nested in an element child is enough (verified: under the proposal the
-serialized form ends the title inside the nested comment and the text after it leaves the title). So patching must insert only
-text there (suggested change 3). DOM-built trees aren't a goal: comment data with `-->` already breaks them.
+serialized form ends the title inside the nested comment and the text after it leaves the title). So patching must
+keep only the safe parts there (suggested change 3). DOM-built trees aren't a goal: comment data with `-->` already breaks them.
 Fragment parsing with a foreign context element (`title`, `style`, `script`, `noscript`; the six breakout elements)
 must be namespace-aware.
 
@@ -125,9 +125,13 @@ Limits:
 2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing
    `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too, and drops element, comment and PI children of `script`: a nested `script` element's end tag would end an HTML `script` early). The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
-3. Make `template for` patching into an SVG/MathML `title`, `style`, `script` or `noscript` insert only the patch's text
-   content, as one text node (elements, comments and PIs in the patch are dropped). Text in these elements is escaped on
-   serialization, so patched trees stay as safe as parser-built ones, and a streamed `title` text still works. The check is
+3. Make `template for` patching into an SVG/MathML `title`, `style`, `script` or `noscript` insert the patch's text nodes as
+   they are, its comments and PIs unless their data contains `</`, and each element child as its text content (a comment
+   nested in an element child would otherwise reach the serialization as markup text). Text in these elements is escaped on
+   serialization, and a comment or PI can only end the element through the start of an end tag (comment data with `<`, `x</`
+   or `</titlex y` round-trips in mode 4), so patched trees stay as safe as parser-built ones, markers for later patches
+   (`<?marker name="m"?>`) and comment markers still work, and a streamed `title` text works. `</` is name-independent and
+   slightly more conservative than the exact test (`</` plus the element's name, then whitespace, `/` or `>`). The check is
    only in patching, so ordinary parsing pays nothing, and since `template for` is new there is no existing content to
    break and no ordering constraint with the parser change. Parser-built trees, including patched ones, are the goal;
    DOM-built trees aren't (comment data with `-->` already breaks them), so there is no default serializer rule. Stored

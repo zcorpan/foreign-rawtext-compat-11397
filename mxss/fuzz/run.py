@@ -8,7 +8,7 @@ range [start, start+done), stats) and one 'finding' line per newly seen signatur
 Case i of worker k derives from PRNG seed hash(base, i) with i in the worker's own index space
 (start = k * 10**12 + n), so re-running with the same label continues where each worker stopped.
 """
-import sys, argparse, glob, http.server, json, multiprocessing as mp, os, sys, threading, time, traceback
+import argparse, glob, http.server, json, multiprocessing as mp, os, sys, threading, time, traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

@@ -43,6 +43,42 @@ class is closed once corners 1 and 2 are handled; about 70% that corners 1 to 3 
 parser-producible sources. Everything above applies only to updated engines; stored or server-sanitized content
 stays exposed to the old classes until old browsers go away (see "Transition risk" in the top-level README).
 
+## `template for` and template namespaces (#11818, #12976, #13100)
+
+Fuzzed in Chrome Canary 160 (today's parsing, which has HTML PIs and `template for`; 4M baseline cases and 5.5M with PI
+and patching content; `fuzz/RESULTS.md`), and #13100 read from its diff (not implemented in any engine yet).
+
+- **PIs alone add no class.** A parser-made PI ends at its first `>`, so it can't hold an end tag, and every finding signature
+  that contains a PI still occurs with `<?` replaced by `<!`. 29 PI shapes in 16 containers round-trip unchanged. DOM-built PIs
+  with `>` in the data still don't (M9).
+- **Patching adds one class, and it is live in Canary today.** A patch builds trees the parser can't: HTML elements
+  under SVG/MathML parents, because the template contents are parsed as HTML and inserted under the marker's parent. When the
+  patched element is a raw-text element (`xmp`, `style`, `iframe`, `noembed`, `noframes`, `plaintext`, `script`) its text is
+  inert in the first tree and markup after serialization and reparse, where the same element name is foreign. That is M1 with the
+  namespace pivot supplied by the patch: 52 signatures, 1,517 finding cases, needing a marker PI and `template for`. A
+  sanitizer sees the patched tree (patching happens while parsing), so stripping PIs or `template` from the input doesn't help.
+- **The proposal closes it** (tokenization of the same names no longer depends on the namespace; the six break out), apart from
+  the `script` and `noscript` corners already listed. **So does #13100**, in engines that implement it: a patch inherits the
+  target's namespace, so a patched `style` under an SVG parent is an SVG `style`, not an HTML one. They're independent
+  fixes; stored content and old parsers only get the first.
+- **`contentnamespace` is a new, attacker-supplied namespace pivot for old parsers.** A parser that doesn't know the
+  attribute parses the template contents in the HTML namespace, and a browser that does parses them in SVG or MathML. With
+  today's tokenization that is M1 (raw-text elements are text in one and markup in the other). Sanitizers whose attribute
+  allowlist drops unknown attributes aren't exposed; blocklist-style ones are. #11397 makes tokenization namespace-independent
+  and so removes the carrier, except for the `script` and `noscript` corners. So #11397 should be implemented before, or
+  in the same release as, #13100's `contentnamespace`. (The Sanitizer API's safe default would allow the attribute, but it
+  sanitizes while parsing, so both sides agree.)
+- **Coordination points in #13100's text:**
+  - `resolve a parser context namespace` lists SVG `title` with `foreignObject` and `desc` as an HTML-namespace context. Under
+    #11397 SVG `title` is no longer an HTML integration point, so the lists must agree on what a patch into a `title` does.
+  - Its content model lets `template` be a child of any SVG element except `script` and `style`. Under #11397 SVG `title`
+    (and the six breakout elements and `noscript`) can't have element children from the parser, so `template` should be excluded
+    there too.
+  - Self-closing `template` in foreign content and "stop foreign end-tag recovery at open `template` boundaries" change tree
+    construction between old and new parsers (a structural pivot, M7, without a raw-text carrier).
+  - Serializing `contentnamespace` on every `template` is good for round trips and harmless to old parsers (an unknown attribute).
+- **Not tested:** the proposal in Chrome (not built), and #13100 anywhere.
+
 ## Evidence
 
 | Method | What | Files |
@@ -92,3 +128,6 @@ Limits:
    and everything else (including `DOMParser`, `createHTMLDocument`, fragment parsing and server-side parsers)
    parses with scripting enabled. Tell sanitizer maintainers to parse with scripting enabled and drop `noscript`,
    because a scripting-disabled user's browser reads its children as markup the sanitizer saw as text.
+6. Implement #11397's tokenization before or with #13100's `contentnamespace`, and align #13100 with it: SVG `title` is
+   no longer an HTML integration point (its parser-context-namespace list), and `template` shouldn't be allowed as a child of
+   SVG `title`.

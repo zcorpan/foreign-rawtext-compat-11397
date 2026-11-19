@@ -316,6 +316,21 @@ const KNOWN = new Set(NAMES_ALL.map(x => x.toLowerCase()).concat(['html', 'head'
 function nm(l) { return KNOWN.has(l.toLowerCase()) ? l : (l.includes('-') ? 'custom' : 'other'); }
 function elKey(n) { return n && n.nodeType === 1 ? nsKey(n) + ':' + nm(n.localName) : (n ? (n.nodeType === 11 ? 'frag' : 'doc') : '^'); }
 function nsSet(root, local) { const m = new Set(); const st = [root]; while (st.length) { const n = st.pop(); if (n.nodeType === 1) { if (n.localName === local) m.add(nsKey(n)); if (n.localName === 'template' && n.namespaceURI === NS.h && n.content) st.push(n.content); } for (let c = n.lastChild; c; c = c.previousSibling) st.push(c); } return Array.from(m).sort().join(''); }
+function piCause(root1, p2, root2) {
+  const rest = p2.slice(); let cause = null; const st = [root1];
+  while (st.length && !cause) { const n = st.pop();
+    if (n.nodeType === 7) { const key = n.target + '\u0001' + n.data; const i = rest.indexOf(key); if (i >= 0) rest.splice(i, 1); else cause = 'lost/changed in ' + parentKey(n) + (/\?$/.test(n.data) ? ' (data ends with ?)' : '') + (n.target.toLowerCase() === 'marker' ? ' marker' : ''); }
+    if (n.nodeType === 1 && n.localName === 'template' && n.namespaceURI === NS.h && n.content) st.push(n.content);
+    for (let c = n.lastChild; c; c = c.previousSibling) st.push(c); }
+  if (cause) return cause;
+  const rest1 = []; const q = [root1]; { const tmp = []; scan(root1, new Map(), null, tmp); rest1.push(...tmp); }
+  const s2 = [root2]; const used = rest1.slice();
+  while (s2.length) { const n = s2.pop();
+    if (n.nodeType === 7) { const key = n.target + '\u0001' + n.data; const i = used.indexOf(key); if (i >= 0) used.splice(i, 1); else return 'gained in ' + parentKey(n); }
+    if (n.nodeType === 1 && n.localName === 'template' && n.namespaceURI === NS.h && n.content) s2.push(n.content);
+    for (let c = n.lastChild; c; c = c.previousSibling) s2.push(c); }
+  return 'other';
+}
 function lens(root) { const m = new Map(); scan(root, m, null); return m; }
 
 
@@ -513,7 +528,7 @@ function evalSpec(spec, wantAll) {
     if (c2 === spec.t1 && !spec.prune && !spec.dom && res.struct === null) {
       const d = diffNames(names1, n2);
       if (d.length) res.struct = d.slice(0, 3).join(',');
-      if (names1.get('#pi')) { const p2 = []; scan(t2.root, new Map(), null, p2); const a = pis1.slice().sort().join('\u0002'), b = p2.sort().join('\u0002'); if (a !== b) res.piRT = pis1.length !== p2.length ? 'count ' + pis1.length + '>' + p2.length : 'data-changed'; }
+      if (names1.get('#pi')) { const p2 = []; scan(t2.root, new Map(), null, p2); res.piCause = null; if (p2.slice().sort().join('\u0002') !== pis1.slice().sort().join('\u0002')) res.piCause = piCause(t1.root, p2, t2.root); const a = pis1.slice().sort().join('\u0002'), b = p2.sort().join('\u0002'); if (a !== b) res.piRT = pis1.length !== p2.length ? 'count ' + pis1.length + '>' + p2.length : 'data-changed'; }
     }
     const deep = paths ? paths[0].slice(1) : (spec.deep || []);
     if (deep.length) {
@@ -639,6 +654,8 @@ const FZ = {
       if (r.noCanary) { st.noCanary++; continue; }
       st.t1[spec.t1] = (st.t1[spec.t1] || 0) + 1;
       if (r.tfNote) { st.tf = st.tf || {}; st.tf[r.tfNote] = (st.tf[r.tfNote] || 0) + 1; }
+      if (r.piCause && opts.piSamples) { st.piS = st.piS || {}; if (!st.piS[r.piCause]) st.piS[r.piCause] = {spec, k: r.piCause}; }
+      if (r.piCause) { st.piCause = st.piCause || {}; const kk = r.piCause + ' | t1=' + spec.t1; st.piCause[kk] = (st.piCause[kk] || 0) + 1; }
       if (r.piRT) { st.piRT = st.piRT || {}; st.piRT[r.piRT] = (st.piRT[r.piRT] || 0) + 1; }
       if (r.struct) {
         st.struct[r.struct] = (st.struct[r.struct] || 0) + 1;

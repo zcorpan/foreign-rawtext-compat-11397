@@ -20,6 +20,10 @@ cause was not confirmed, but the numbers match). Before running it for hours:
 - an interrupted run leaves Firefox processes behind: `reap.py` kills them. Older versions of the driver
   leaked a browser each time a worker restarted after a crash or hang; the current driver reaps them.
 
+Chrome Canary 160 (headless, 3 workers, `--batch 10000`): summed RSS of all Canary processes peaked at about
+9.4 GB (about 3 GB per worker; the sum double-counts shared pages and includes any other Canary on the machine).
+`memwatch.py OUT` logs it every 15 s. Chrome workers use `--user-data-dir` under `mxss/private/profiles/`.
+
 Batch size changes which cases a label generates, so keep the same `--batch` when resuming a label.
 
 ## Files
@@ -118,3 +122,28 @@ range is skipped.
   known classes it reaches; see RESULTS.md.
 - Seeds that can't be flagged on any modern baseline (sanitizer-side parser bugs, historic engine
   bugs, DOM-created nodes, parse-time cloning) mark the oracle's scope, not failures.
+
+## PIs and `template for` (Chrome Canary, whatwg/html#12118 and #11818)
+
+Entry points that parse HTML PIs as nodes and patch `template for` in Canary 160: `DOMParser`, `innerHTML` (fragment parsing,
+any context element), `setHTMLUnsafe`, `Document.parseHTMLUnsafe`, `document.write` into a `createHTMLDocument` document, and
+`iframe` `srcdoc`. They behave the same, so the fuzzer uses `DOMParser`/`innerHTML` for T1 and adds `u:doc`
+(`parseHTMLUnsafe`), `u:h:div` (`setHTMLUnsafe`) and `dw` (`document.write`) as extra T2 entry points (`cfg.t2extra`).
+Navigation and `srcdoc` were not needed. Facts checked by hand (payload-free probes):
+- A PI ends at the first `>`; target must be an ASCII-letter name (`<?-x y?>`, `<?1 y?>`, `<?x:y z?>`, `<??>`, `<?>`, `<?x/>`, `<?xml ...?>`
+  become bogus comments); `<?x?`, at EOF swallows the rest of the input; a trailing `?` in the data is dropped. PIs aren't created
+  inside RCDATA/RAWTEXT (`title`, `textarea`, `style`, `script`, `xmp`...), where they are text.
+- Patching happens while parsing: when a `template` start tag with `for` is seen, the marker is looked up among the descendants of the
+  adjusted insertion location's parent. The marker must come before the template in the tree (a template before the marker stays
+  an ordinary template). Marker names need a quoted `name="m"` value. The template contents are tokenized and tree-built as HTML and inserted
+  in place of the marker (or between `<?start ...?>` and `<?end?>`), under whatever parent the marker has. The first template to match
+  consumes the marker.
+
+Generators (`cfg.pPitf`, kind `pitf`): PI shapes with canaries in the target, the data, and around `>`/`?>`; marker PIs (case, quoting,
+unquoted, odd names); range markers; `template for` with comments, PIs, elements, raw elements, text and nested templates; markers inside
+foreign `title`/`style`/`script`/`noscript`/`textarea`, `select`, table family, `template`; templates before and after the marker; several
+templates per marker. The oracle is unchanged (T1 = patched tree), plus: PI node counts and `(target, data)` multisets compared in the same
+context (`piRT`, with causes), patched/unpatched counts, and an ablation (`ablate.py`) that replaces `<?` by `<!` and `for` by `data-for`
+and re-evaluates each minimized finding to see whether PI parsing or patching is necessary. `tfclass.py` summarizes marker parents and
+patched node kinds. `pi_roundtrip.py` runs a fixed table of PI shapes in 16 containers. `cfg.noPitf` removes `<?` tokens and `template for`
+from every generator (baseline).

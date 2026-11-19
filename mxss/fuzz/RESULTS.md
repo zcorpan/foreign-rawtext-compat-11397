@@ -103,3 +103,42 @@ the published seeds with injected canaries (4,000 blocks from 4 WARCs of CC-MAIN
 self-closed-breakout generator; `noscriptmix` = noscript allowed in fragment contexts (scripting flag differs);
 `legacyser` = serializer without `<`/`>` attribute escaping (pre-#6362).
 Totals per Firefox mode (all labels): mode 0 19,515,451, mode 2 13,400,000, mode 3 16,400,000, mode 4 17,400,000 cases.
+
+## PIs and `template for` in Chrome Canary 160 (baseline, no proposal)
+
+Runs (`--batch 10000`, 3 workers): `chrome-nopitf` 4,050,000 cases (no PI or `template for` tokens), `chrome-pitf` 4,050,000 (half the cases are
+PI/template-for constructs; 458,000 cases contained a `template for` that patched), `chrome-pitf-focus` 1,500,000 (95% PI/template-for;
+337,000 patched). Extra T2 entry points: `parseHTMLUnsafe`, `setHTMLUnsafe`, `document.write`.
+
+Conclusions:
+- PIs alone add no mXSS class. No finding needs PI parsing without `template for`. Of the 18 minimized finding signatures that contain a PI but no
+  patching, all still produced a finding after replacing `<?` by `<!`, so the PI was incidental. A parser-made PI cannot hold the end tag of a
+  raw/RCDATA/foreign element, because it ends at its first `>`; it can hold at most an unterminated start tag. I found no case where that
+  becomes live. PIs are text inside RCDATA/RAWTEXT, so within one engine there is no PI-vs-bogus-comment pivot.
+- Parser-made PIs round-trip: 29 PI shapes in 16 containers (div, svg, math, foreign title/style/script, select, table, tr, p,
+  template, head, frameset, HTML title/style/textarea): no changes in target or data. Mismatches in the fuzz runs have three causes:
+  PIs that are children of the Document or `head` aren't in `body.innerHTML`; marker and range-marker PIs are consumed by patching (so counts
+  differ when patching succeeds in one parse and not the other); and the `frameset` document has no `body`. DOM-built PIs whose data contains `>` or ends with `?`
+  don't round-trip, as before (row 15, M9).
+- `template for` adds one mechanism, class M10 in `literature.md` realised in practice: the patch inserts HTML-parsed content under the marker's parent without
+  re-running namespace or content-model rules. Verified shapes (class level): HTML elements (`b`, `div`, `xmp`, `style`, ...) as children of
+  SVG/MathML elements, including foreign `title` and `style` (together with comment and text children); any element directly under `select`,
+  `table`, `tbody`, `tr` (no foster parenting, no select content model). Range markers delete the nodes between `start` and `end`.
+  Nested patching in template contents works when the inner marker is inside; a second template for a consumed marker doesn't patch.
+- The new finding class (needs both a marker PI and `template for`): HTML raw/RCDATA elements (`xmp`, `style`, `iframe`, `noembed`, `noframes`,
+  `plaintext`, `script`) as children of an SVG or MathML element, created by a patch. Carrier: text of the HTML raw element. Pivot: the
+  parent is foreign, so on reparse the same element is foreign and its text is markup (M1 mechanism, supplied by patching instead of
+  `form`/`mglyph`). Seen with the DOMParser document as both T1 and T2 (`same`), HTML to HTML (`toHtml`), and foreign contexts; 52 distinct
+  signatures across the two PI runs (20 and 32), 1,517 finding cases (458 and 1,064). Marker parents in the minimized findings: SVG and MathML elements (including
+  `textarea`, `style`, `plaintext` under foreign parents). Reached in every entry point tried. It doesn't involve a foreign raw
+  element with PI/comment children, so it is M1 via M10, not M4.
+- Patches that introduce nodes the parser can't produce: yes (see the shapes above). For foreign `title`/`style`/`script`, a patch can add
+  comment, PI and element children; in baseline Canary foreign `title`/`style` are markup, so these serialize and reparse to the same tree.
+  They become row-21 trees under RCDATA tokenization of foreign `title`/`style`/`script`/`noscript` (the proposal), and I could not test
+  that in Chrome. Whether a patch can change the namespace/context of markup: yes, template contents are tokenized as HTML and inserted under
+  the marker's parent regardless of its namespace; I did not see a patch change the namespace of an element already in the tree.
+- Marker PIs that are not consumed in parse 1 (template before the marker, unquoted `name`)
+  can be consumed in parse 2, or vice versa; so patching itself is not idempotent under serialize and reparse. I saw this as PI count
+  mismatches only; no canary became live through it alone.
+- Baseline comparison: `chrome-nopitf` and `chrome-pitf` have the same baseline classes (M1, M3/M7-style comment carriers, M4, M6, M9, rawctx);
+  the only extra signatures in `chrome-pitf` are the `template for` ones above.

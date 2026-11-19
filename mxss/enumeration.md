@@ -99,7 +99,8 @@ only. "Closed" is about the proposal + #6362 + #9426.
   other namespaces (previously a new source of row 1, closed by the proposal) and, after the
   proposal, children inside foreign RCDATA elements (row 21). Spec reading only. I could not find a
   rule that rejects a marker whose parent is a foreign `title`, `style`, `script` or `noscript`.
-  Confirmed by hand in Chrome Canary 160 that patching into a foreign `title` works, including a
+  Fuzzing Chrome Canary 160 found that patched HTML raw-text elements under an SVG/MathML parent are a live M1
+  variant today (see `mxss/README.md`, "`template for` and template namespaces"). Confirmed by hand in Chrome Canary 160 that patching into a foreign `title` works, including a
   comment whose data contains the end tag. Restricting patching isn't needed: the default
   serializer rule (omit such comments and PIs) covers it and DOM-built trees too.
   Needs a guard if the proposal lands.

@@ -23,9 +23,11 @@ leaves three parser-producible corners, two of which the spec PR can close:
 
 Also found by reading the spec (the Firefox build has no PIs, `template for` or declarative shadow DOM; the patching
 itself was confirmed by hand in Chrome Canary 160):
-`template for` patching can put a comment or PI node into a foreign RCDATA element, and a comment from a patch
-(parsed outside the element) can contain the end tag. Restricting patching isn't needed: only a comment or PI
-whose data contains the element's end tag matters, and the serializer can omit those (suggested change 3).
+`template for` patching can put comment, PI and element nodes into a foreign RCDATA element, and the patch content
+(parsed outside the element) can contain the end tag anywhere in its subtree: in a comment or PI, or in the text of a raw-text
+element, which the serializer emits literally. A comment nested in an element child is enough (verified: under the proposal the
+serialized form ends the title inside the nested comment and the text after it leaves the title). So patching must insert only
+text there (suggested change 3). DOM-built trees aren't a goal: comment data with `-->` already breaks them.
 Fragment parsing with a foreign context element (`title`, `style`, `script`, `noscript`; the six breakout elements)
 must be namespace-aware.
 
@@ -55,7 +57,7 @@ and patching content; `fuzz/RESULTS.md`), and #13100 read from its diff (not imp
   `?>`: data ending in `</title` becomes `</title?>`, which tokenizes as a tag named `title?`, so that case is defused (verified).
   `</title x`, `</title ` and `</title/` become `</title x?>` and so on, which a proposal tokenizer reads as an end tag, ending
   the PI and the element, and the text after it becomes markup (verified in mode 4, with `<?` read as a bogus comment). A PI
-  parsed under the proposal can't hold those, so this is the stored-content and old-parser class (M4), and the serializer rules
+  parsed under the proposal can't hold those, so this is the stored-content and old-parser class (M4), and the opt-in serializer mode and the sanitizer rules
   must test PIs for `</name` followed by whitespace, `/` or `>`, not for the plain end tag.
 - **Patching adds one class, and it is live in Canary today.** A patch builds trees the parser can't: HTML elements
   under SVG/MathML parents, because the template contents are parsed as HTML and inserted under the marker's parent. When the
@@ -123,13 +125,13 @@ Limits:
 2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing
    `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too, and drops element, comment and PI children of `script`: a nested `script` element's end tag would end an HTML `script` early). The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
-3. Make the default serializer omit a comment or PI child of an SVG/MathML `title`, `style`, `script` or `noscript` whose
-   data contains the start of the element's end tag (`</name` followed by whitespace, `/` or `>`; for a PI the serializer's
-   trailing `?` defuses data that merely ends in `</name`). This covers `template for` patches and DOM-built trees with one rule. Elements and
-   text patched into these elements are fine: elements reparse as text, the benign direction. Ship it with the parser
-   change, not before: today the parser does produce such comments (cral.ehess.fr is one page), so a default rule that
-   shipped first would change `innerHTML` for parser-built trees and need its own compat analysis. Before the parser
-   change, server-side sanitizers use the opt-in serializer mode or their own checks.
+3. Make `template for` patching into an SVG/MathML `title`, `style`, `script` or `noscript` insert only the patch's text
+   content, as one text node (elements, comments and PIs in the patch are dropped). Text in these elements is escaped on
+   serialization, so patched trees stay as safe as parser-built ones, and a streamed `title` text still works. The check is
+   only in patching, so ordinary parsing pays nothing, and since `template for` is new there is no existing content to
+   break and no ordering constraint with the parser change. Parser-built trees, including patched ones, are the goal;
+   DOM-built trees aren't (comment data with `-->` already breaks them), so there is no default serializer rule. Stored
+   content from old parsers is covered by the opt-in serializer mode and the sanitizer rules.
 4. Make fragment parsing's context-element handling namespace-aware for these elements.
 5. Corner 3: define #9426 so only a browser whose user or sandbox actually disabled scripting parses with the flag off,
    and everything else (including `DOMParser`, `createHTMLDocument`, fragment parsing and server-side parsers)

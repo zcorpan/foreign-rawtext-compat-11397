@@ -8,7 +8,7 @@ range [start, start+done), stats) and one 'finding' line per newly seen signatur
 Case i of worker k derives from PRNG seed hash(base, i) with i in the worker's own index space
 (start = k * 10**12 + n), so re-running with the same label continues where each worker stopped.
 """
-import argparse, glob, http.server, json, multiprocessing as mp, os, sys, threading, time, traceback
+import sys, argparse, glob, http.server, json, multiprocessing as mp, os, sys, threading, time, traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -159,6 +159,8 @@ def main():
     ap.add_argument("--batch-ms", dest="batch_ms", type=int, default=20000)
     ap.add_argument("--cfg")
     a = ap.parse_args()
+    if a.batch > 20000:
+        print(f"WARNING: --batch {a.batch} makes each Firefox worker grow to ~20 GB; use --batch 10000 and 2-4 workers (see README.md, Memory warning)", file=sys.stderr)
     os.makedirs(os.path.join(RUNS, a.label), exist_ok=True)
     deadline = time.time() + a.seconds
     ps = [mp.Process(target=worker, args=(k, a, deadline)) for k in range(a.workers)]

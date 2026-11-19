@@ -6,6 +6,22 @@ attributes) and #9426 (one scripting flag), is HTML parse, serialize, parse mXSS
 fuzzer looks for counterexamples and, on baseline engines, checks that it can rediscover the known
 classes (`mxss/literature.md`, M1 to M16). XML and XHTML are out of scope.
 
+## Memory warning
+
+Each Firefox worker's memory grows with the batch size, because the page keeps the batch's cases, the corpus and
+the statistics. On a 48 GB Apple silicon machine, one worker (mode 4, summed RSS of all its processes, which
+double-counts some shared pages) reached about 23 GB with the default `--batch 100000` and plateaued around
+6.5 GB with `--batch 10000`. Four workers at the default would not fit in 48 GB, and a long campaign that also
+runs a build can exhaust memory and crash macOS (two such crashes happened while this was developed; the
+cause was not confirmed, but the numbers match). Before running it for hours:
+- use `--batch 10000` or smaller, and 2 to 4 workers, and keep total RSS under about half of RAM
+  (`ps -axo rss,command | grep firefox`);
+- don't run it next to a build;
+- an interrupted run leaves Firefox processes behind: `reap.py` kills them. Older versions of the driver
+  leaked a browser each time a worker restarted after a crash or hang; the current driver reaps them.
+
+Batch size changes which cases a label generates, so keep the same `--batch` when resuming a label.
+
 ## Files
 
 - `fuzz.js`: generator, oracle, minimizer, all in the page (`window.FZ`). A seeded PRNG makes case

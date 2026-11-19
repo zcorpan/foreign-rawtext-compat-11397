@@ -18,7 +18,7 @@ leaves three parser-producible corners, two of which the spec PR can close:
 | # | Corner | Introduced by proposal? | Closable in the spec PR? |
 |---|---|---|---|
 | 1 | Self-closing `textarea`, `xmp`, `iframe`, `noembed`, `noframes` or `plaintext` in SVG/MathML stays foreign and empty, but serializes with start and end tags, so on reparse it breaks out and what follows changes namespace. Verified by hand: `<svg><xmp/><rect/></svg>` round-trips today, not under the proposal | yes | yes: break out regardless of the self-closing flag. Compat cost looks nil: the live check of 2,987 candidate pages found no real SVG/MathML element of these six, self-closing or not, except one non-self-closing `iframe` |
-| 2 | HTML `script` text (script data double-escape, or `<?`/bogus-comment prefix) vs foreign RCDATA `script`: one text node in HTML, split at the first end tag after a namespace pivot. Needs a sanitizer that keeps `script`. Also appears in the RCDATA-only modes | yes | yes, by tokenizing foreign `script` with the HTML script data states (plus character references); otherwise a known exception |
+| 2 | HTML `script` text (script data double-escape, or `<?`/bogus-comment prefix) vs foreign RCDATA `script`: one text node in HTML, split at the first end tag after a namespace pivot. Needs a sanitizer that keeps `script`. Also appears in the RCDATA-only modes | yes | accepted as an exception (decided): closing it would need script data states with character references, which makes `<!--` text in SVG scripts, or about 10 or more new states for comment nodes that track the double-escape state. Sanitizers that keep `script` must reject text containing `<!--` or `<script` |
 | 3 | HTML `noscript` parsed with scripting off (markup children) vs foreign `noscript` (RCDATA always), after a namespace pivot | partly: #9426 fixes it inside one browser; server-side libraries that default to scripting off still differ | depends on #9426's final text |
 
 Also found by reading the spec (not reproduced: the build has no PIs, `template for` or declarative shadow DOM):
@@ -76,9 +76,12 @@ Limits:
 ## Suggested changes to the proposal
 
 1. Break out the six elements regardless of the self-closing flag (corner 1).
-2. Decide corner 2: use the HTML script data states for foreign `script` (closes it, costs a character-reference
-   variant of those states), or document it as an exception.
+2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing
+   `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too). The
+   Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
 3. Add a rule that `template for` patching never inserts comments, PIs or elements into a foreign RCDATA element.
 4. Make fragment parsing's context-element handling namespace-aware for these elements.
-5. Rely on #9426 for corner 3, and tell sanitizer maintainers that scripting-off parsers see markup children of
-   `noscript`.
+5. Corner 3: define #9426 so only a browser whose user or sandbox actually disabled scripting parses with the flag off,
+   and everything else (including `DOMParser`, `createHTMLDocument`, fragment parsing and server-side parsers)
+   parses with scripting enabled. Tell sanitizer maintainers to parse with scripting enabled and drop `noscript`,
+   because a scripting-disabled user's browser reads its children as markup the sanitizer saw as text.

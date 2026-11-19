@@ -145,8 +145,15 @@ In review images, today is on the left.
     in use there.
   - RCDATA also avoids adding character references to the script data states and a clash with
     comment handling.
-  - The remaining boundary difference, HTML `<script><!--<script></script>…`, is out of mXSS
-    reach because sanitizers drop `script`.
+  - The remaining boundary difference, HTML `<script><!--<script></script>…`, is an accepted
+    exception: it needs a sanitizer that keeps `script` (any type: a data block's text is still
+    script data text). Sanitizers that keep `script` should reject its text when it contains
+    `<!--` or `<script`. Keeping comments as nodes rules out the other options: matching the
+    HTML extents would need script data states with character references, which makes `<!--` text
+    (about 3 pages in the HTTP Archive full parses have a comment in an SVG script, inert today),
+    or roughly 10 or more new states so comment nodes track the double-escape state. The Sanitizer
+    API's safe methods (`setHTML()` and friends) remove `script` regardless of the config and
+    never reserialize, so they're unaffected.
 - **HTML `<plaintext>` should stay PLAINTEXT**:
   - Ending it at `</plaintext>` would change no page found:
     - Common Crawl has it in static markup on 0 of 255,716 pages.
@@ -193,6 +200,11 @@ What a sanitizer, or the pipeline around it, needs so stored content isn't affec
   validation.
 - Don't allow raw text and RCDATA elements whose end tag can appear in their text, in any
   namespace, unless their text is checked for markup (DOMPurify's literal-text guard does this).
+- If `script` is kept at all (including data blocks with a non-JS type), drop or reject any whose
+  text contains `<!--` or `<script`, even when the config allows `script`: the HTML script data
+  states let those hide the element's end tag, and foreign `script` ends at the first one.
+- Parse with scripting enabled, and drop `noscript`: a scripting-disabled parser (including a user
+  who disabled scripts) reads its children as markup the sanitizer saw as text.
 
 Sanitizer maintainers can add the checks above independently of the change, so they can be in
 place before browsers ship it.

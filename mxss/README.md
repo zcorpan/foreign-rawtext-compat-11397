@@ -10,10 +10,11 @@ in `mxss/private/` (git-ignored).
 
 ## Answer
 
-**Not quite the last one.** The proposal closes the class that every published post-#6362 bypass relied on:
-text, comment, PI or attribute carriers hiding markup in raw text or RCDATA, with a namespace pivot changing how
-the element's end tag is read. In 17.4M Firefox cases with the full proposal there is no finding of that kind. It
-leaves three parser-producible corners, two of which the spec PR can close:
+**I think so, for parser-built trees, with caveats.** The proposal closes the class that every published post-#6362
+bypass relied on: text, comment, PI or attribute carriers hiding markup in raw text or RCDATA, with a namespace pivot
+changing how the element's end tag is read. In 17.4M Firefox cases with the full proposal as first implemented there is no
+finding of that kind. The fuzzing found three parser-producible corners; the plan addresses them as below, but the
+self-closing fix and the `template for` rule have not been fuzzed yet (they need an implementation):
 
 | # | Corner | Introduced by proposal? | Closable in the spec PR? |
 |---|---|---|---|
@@ -31,10 +32,10 @@ keep only the safe parts there (suggested change 3). DOM-built trees aren't a go
 Fragment parsing with a foreign context element (`title`, `style`, `script`, `noscript`; the six breakout elements)
 must be namespace-aware.
 
-Not addressed by any parser change, and present in every configuration including today's:
-- DOM-built trees the parser can't produce (comment data with `-->`, PI data with `>`, raw text with its end tag),
-  which the serializer emits literally. A serializer guard is a separate issue.
-- Sink-context mismatch: output inserted inside a raw-text wrapper the application adds.
+Not addressed by a parser change, and out of scope: DOM-built trees (comment data with `-->` already breaks them) and
+inserting the output into a different context than the sanitizer parsed it for, such as a `<textarea>` or `<xmp>` the
+application adds around it (the `rawctx` and `wrap` findings, present in every configuration including today's). Also not
+addressed by the parser change:
 - Browser-generated DOM after a sanitizer walk (`selectedcontent`, `template for`, shadow DOM).
 - Sanitizer-side parser or serializer non-conformance.
 - Structural pivots (form nesting, foster parenting): they remain, but with no raw-text carrier they only

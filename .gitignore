@@ -9,3 +9,4 @@ out-cc/dc.jsonl
 out-*/review/
 *.log
 out-ha-*/review/
+mxss/private/

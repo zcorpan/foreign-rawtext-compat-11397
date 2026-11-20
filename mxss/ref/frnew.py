@@ -149,8 +149,8 @@ class TreeBuilder(base.TreeBuilder):
 
 
 def has_end_tag(text, name):
-    """text contains '</' + name (ASCII case-insensitive) + tab/LF/FF/space/'/'/'>'."""
-    return re.search("</" + re.escape(name) + "[\t\n\f />]", text, re.I | re.A) is not None
+    """text contains '</' + name (ASCII case-insensitive) + tab/LF/FF/space/'/'/'>', or ends with '</' + name."""
+    return re.search("</" + re.escape(name) + "(?:[\t\n\f />]|\\Z)", text, re.I | re.A) is not None
 
 
 def dump(root):

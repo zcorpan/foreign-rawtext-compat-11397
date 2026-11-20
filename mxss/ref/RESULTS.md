@@ -74,29 +74,28 @@ contexts (document, `div`, `svg`, `math`, `svg title|style|script|noscript`, `ma
 | | cases |
 |---|---|
 | A | 269687 |
-| B | 260646 |
-| A and B | 260635 |
-| A without B | 9052 |
-| B without A | 11 |
+| B | 263728 |
+| A and B | 263711 |
+| A without B | 5976 |
+| B without A | 17 |
 
-A implies B does NOT hold as stated. The 9052 A-without-B cases split as follows.
+Every A-without-B case already has an ordinary parse error in old1 (0 cases with no error at all, besides a missing
+doctype), so "every input whose parse changes has a parse error today" holds on this corpus. Two earlier gaps were
+closed in the step 1 text: markup in fragment parses into a foreign title/style/script/noscript context (the fragment
+context paragraph), and a processing instruction or bogus comment that ends at the `>` of the end tag, whose data ends
+with `</name` without the delimiter (the "ends with" clause; the balanced input
+`<svg><style><?a b</style></style></svg>` had no error at all before).
 
-Old1 reports no parse error at all (besides missing doctype), 130 cases, all fragments whose context is a foreign
-title/style/script/noscript (26 distinct inputs in each of the 5 contexts). Minimal examples (context `svg title`
-etc.): `<?C>` (PI, new gives text), `<!---->` (comment), `</html>` (stray end tag, ignored today, text in new).
-Cause: the dispatcher paragraph covers start tags only, and the comment/PI check looks at targetParent, which in
-the fragment case is the root `html` element, not the context element. Start tags in these contexts are flagged.
-
-Old1 already reports an ordinary tokenizer error (8922 cases). The tree changes but no step1 error is added:
-- Start tag cut off by EOF inside the element (`<svg><style><l`, errors eof-in-tag-name or
-  expected-attribute-name-but-got-eof): new turns the fragment of tag into text, today it is dropped.
-- `</>` (missing-end-tag-name, dropped today, text in new), `</` + non-letter (`<svg><title></ `), `<!`
-  (incorrectly-opened-comment), `<?` at EOF: today a dropped token or a bogus comment without the end tag text.
-- A bogus comment or an invalid-target PI that ends at the `>` of the end tag, so the comment data holds
-  `</title` without the delimiter: `<svg><style><!</Style>`, `<math><Style><?</STYLE>`.
+The A-without-B cases carry an ordinary tokenizer error; the tree changes but no `step1-*` error is added:
+- Start tag cut off by EOF inside the element (`<svg><style><l`): new turns the partial tag into text.
+- `</>`, `</` + non-letter (`<svg><title></ `), `<!` (incorrectly-opened-comment), `<?` at EOF.
+- A bogus comment with an invalid-target PI that ends at the `>` of the end tag (`<svg><style><!</Style>`).
 - NUL in an SVG `title` (today an HTML integration point, so in body drops it; new gives U+FFFD).
-- The same constructs in the fragment contexts above (`<A`, `</>`, `<!`, `<?`, `\x00`).
+- The same constructs in the fragment contexts above.
 
-B without A (11 cases, all fragment contexts): `step1-end-tag-in-cdata-section` for `<![CDATA[</title>` in a fragment
+B without A (17 cases): `step1-end-tag-in-cdata-section` for `<![CDATA[</title>` in a fragment
 with context `svg title` (and style/script/noscript, `math title`). The fragment parse leaves the flag unset, so
 the CDATA text is the same in both; the error is reported but the tree does not change (harmless over-report).
+The 6 document cases are `<svg><Title><?</title` at EOF: the bogus comment data ends with `</title` because the input
+ended, and the tree is the same in both. "Ends with" cannot tell EOF from the end tag's `>`, so truncated input is
+over-reported (harmless).

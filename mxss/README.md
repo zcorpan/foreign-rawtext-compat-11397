@@ -64,13 +64,10 @@ and patching content; `fuzz/RESULTS.md`), and #13100 read from its diff (not imp
   the PI and the element, and the text after it becomes markup (verified in mode 4, with `<?` read as a bogus comment). A PI
   parsed under the proposal can't hold those, so this is the stored-content and old-parser class (M4), and the opt-in serializer mode and the sanitizer rules
   must test PIs for `</name` followed by whitespace, `/` or `>`, not for the plain end tag.
-- **Patching adds one class, and it is live in Canary today.** A patch builds trees the parser can't: HTML elements
-  under SVG/MathML parents, because the template contents are parsed as HTML and inserted under the marker's parent. When the
-  patched element is a raw-text element (`xmp`, `style`, `iframe`, `noembed`, `noframes`, `plaintext`, `script`) its text is
-  inert in the first tree and markup after serialization and reparse, where the same element name is foreign. That is M1 with the
-  namespace pivot supplied by the patch: 52 signatures, 1,517 finding cases, needing a marker PI and `template for`. A
-  sanitizer sees the patched tree (patching happens while parsing), so stripping PIs or `template` from the input doesn't help.
-- **The proposal closes it** (tokenization of the same names no longer depends on the namespace; the six break out), apart from
+- **Patching builds trees the parser can't.** The template contents are parsed as HTML and inserted under the marker's
+  parent, so HTML elements can end up under SVG/MathML parents (see #12976), and the same element name is foreign when such
+  a tree is serialized and parsed again.
+- **The proposal removes the difference** (tokenization of the same names no longer depends on the namespace; the six break out), apart from
   the `script` and `noscript` corners already listed. **So does #13100**, in engines that implement it: a patch inherits the
   target's namespace, so a patched `style` under an SVG parent is an SVG `style`, not an HTML one. They're independent
   fixes; stored content and old parsers only get the first.

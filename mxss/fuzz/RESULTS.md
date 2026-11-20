@@ -126,13 +126,9 @@ Conclusions:
   SVG/MathML elements, including foreign `title` and `style` (together with comment and text children); any element directly under `select`,
   `table`, `tbody`, `tr` (no foster parenting, no select content model). Range markers delete the nodes between `start` and `end`.
   Nested patching in template contents works when the inner marker is inside; a second template for a consumed marker doesn't patch.
-- The new finding class (needs both a marker PI and `template for`): HTML raw/RCDATA elements (`xmp`, `style`, `iframe`, `noembed`, `noframes`,
-  `plaintext`, `script`) as children of an SVG or MathML element, created by a patch. Carrier: text of the HTML raw element. Pivot: the
-  parent is foreign, so on reparse the same element is foreign and its text is markup (M1 mechanism, supplied by patching instead of
-  `form`/`mglyph`). Seen with the DOMParser document as both T1 and T2 (`same`), HTML to HTML (`toHtml`), and foreign contexts; 52 distinct
-  signatures across the two PI runs (20 and 32), 1,517 finding cases (458 and 1,064). Marker parents in the minimized findings: SVG and MathML elements (including
-  `textarea`, `style`, `plaintext` under foreign parents). Reached in every entry point tried. It doesn't involve a foreign raw
-  element with PI/comment children, so it is M1 via M10, not M4.
+- Patching can create HTML raw/RCDATA elements (`xmp`, `style`, `iframe`, `noembed`, `noframes`, `plaintext`, `script`) as children
+  of an SVG or MathML element (needs both a marker PI and `template for`); the same element name is foreign on reparse. Reached in
+  every entry point tried.
 - Patches that introduce nodes the parser can't produce: yes (see the shapes above). For foreign `title`/`style`/`script`, a patch can add
   comment, PI and element children; in baseline Canary foreign `title`/`style` are markup, so these serialize and reparse to the same tree.
   They become row-21 trees under RCDATA tokenization of foreign `title`/`style`/`script`/`noscript` (the proposal), and I could not test

@@ -61,7 +61,7 @@ Canaries carry unique ids (`X7Q<n>`) and are `img onerror`, `svg onload`, `body 
 4. T2 = parse(S) in a random subset (8) of 30+ contexts: doc, div, body, svg, math, template,
    table, tbody, tr, td, select, foreignObject, mtext, annotation-xml (HTML encoding), SVG title,
    raw and foreign-raw contexts, and "wrap" sinks (`<xmp>`+S+`</xmp>`, same for iframe, noembed,
-   noframes, noscript, style, script, textarea, title, select, table, svg, math, template,
+   noframes, noscript, style, textarea, title, select, table, svg, math, template,
    plaintext). Second-order: 30% of cases also serialize/parse again, up to 3 times.
 5. FINDING = live canary in T2 (or a later round) but not in T1. The signature is
    `pair class : carrier kind @ carrier element | namespaces of the carrier element's name T1>T2`.
@@ -153,8 +153,10 @@ from every generator (baseline).
 
 ## Direct invariants (I1 to I3)
 
-Besides the round-trip canary oracle, every parse (T1 and each T2, any context, including fragment parsing into any context
-element) is checked directly, without serializing:
+Besides the round-trip canary oracle, every parse the oracle runs is checked directly, without serializing: T1 of every
+parser-built case, and T2 and later rounds of cases that weren't discarded, in the contexts of the fixed lists in `fuzz.js`
+(`DEFAULT_T1`, `DEFAULT_T2`, `DESYNC_T1`, `FRAG_CTX`; documents and fragment contexts). The Firefox build makes no PI nodes,
+so the PI parts are untested there:
 - I1: a foreign (SVG/MathML) `title`, `style`, `script` or `noscript` has only text, comment and PI children. I1f (fragment case): after
   parsing into such a context element, its children are only text.
 - I2: no comment or PI child of such an element has data containing `</` + the element's name (ASCII case-insensitive) followed by
@@ -162,13 +164,13 @@ element) is checked directly, without serializing:
   flagged 6 false positives).
 - I3: no foreign `textarea`, `xmp`, `iframe`, `noembed`, `noframes` or `plaintext` element exists (the context element itself is exempt).
 Violations are counted per key `T1@ctx|I..:ns:name:kind` / `T2@ctx|...` in the batch stats (`inv`) and the first case per key is minimized
-(`sig` starts with `inv:`; log entries have `invKind`). DOM-built cases are not checked. Not observable from the DOM, so not
+(`sig` starts with `inv:`; log entries have `invKind`). The DOM-built T1 tree of `dom` cases is not checked (their reparses are). Not observable from the DOM, so not
 recorded: a foreign RCDATA element still open at EOF while the tokenizer is back in the data state.
 Calibration (`private/invcal.py`, payload-free probes): the invariant oracle flags the old mode 4/5 binary on the desync repro (I1) and
 mode 4 on a self-closing foreign `xmp` (I3); mode 0 violates I1 to I3 on foreign title/textarea/xmp/plaintext/comment cases (detection power
 only); the fixed mode 5 binary passes all of them.
 
-Desync generator (`cfg.tk = "desync"`, also 18% of the default targeted generator): formatting elements and adoption agency / foster parenting /
+Desync generator (`cfg.tk = "desync"`, also 8% of the default targeted generator, which sends another 10% to the self-closing generator): formatting elements and adoption agency / foster parenting /
 table, select and template shapes left open, closers, integration points, then a foreign `title`/`style`/`script`/`noscript`
 (also `textarea`/`xmp`), its end tag, and comments, PIs, CDATA and bogus comments holding that end tag; T1 contexts include
 `svg`, `math`, `g`, `mrow`, `foreignObject`, `desc`, `mtext`, `annotation-xml` and documents.

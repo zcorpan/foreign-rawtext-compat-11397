@@ -23,8 +23,8 @@ plan includes their fixes, and "How we got here" below shows how.
   break out of foreign content, whether or not the start tag is self-closing.
 - Fragment parsing into a foreign `title`, `style`, `script` or `noscript` context element yields text only (CDATA markers
   are still dropped), and SVG `title` stops being an HTML integration point. Its content model becomes text (step 1).
-- `template for` patching into those elements keeps text, keeps comments and PIs without `</`, and drops element
-  children.
+- Tree construction never inserts an element into those elements, nor a comment or PI containing `</` unless the element is
+  the current node: this covers `template for` patching, redirected insertions and insertion targets moved there by script.
 - [#9426](https://github.com/whatwg/html/issues/9426): only a browser whose user or sandbox actually disabled scripting parses with the scripting flag off.
 - [#11397](https://github.com/whatwg/html/issues/11397)'s tokenization lands before or with [#13100](https://github.com/whatwg/html/issues/13100)'s `contentnamespace`, and [#13100](https://github.com/whatwg/html/issues/13100) is aligned with it.
 - For stored content and server-side sanitizers: an opt-in serializer mode, and sanitizer rules (reject `script` text
@@ -32,7 +32,8 @@ plan includes their fixes, and "How we got here" below shows how.
 
 **Evidence.** 23.5M Firefox cases on the implementation of the plan found no violation of a direct invariant check (foreign
 RCDATA elements hold only text, comments and PIs, none containing the start of the element's end tag; fragment parsing into
-one yields only text) in documents and in every fragment context, with the canary oracle showing only the leftovers
+one yields only text) in documents and the fuzzer's fixed lists of fragment contexts (T1 in every parser-built case, the
+reparses in the 14.3M not discarded; comments only, as the build makes no PIs), with the canary oracle showing only the leftovers
 listed under Scope. The canary oracle flags today's parsing by the hundreds of thousands, and the invariant checks
 flagged the earlier builds of the proposal, so a clean result means something. The fuzzing is backed by a catalog of 16 published root-cause classes
 (`literature.md`) and a spec enumeration of every place serialization isn't the inverse of parsing (`enumeration.md`).
@@ -57,7 +58,7 @@ markup in raw text or RCDATA, with a namespace pivot) in 17.4M Firefox cases. Th
 proposal's spec text has to rule out (the title end-tag desync and fragment contexts, below). With those fixed in the Gecko build
 (mode 5, commit `5873e678`), 23.5M further cases with a direct invariant oracle (foreign RCDATA elements hold only text,
 comments and PIs, none of which contains the start of the element's end tag; fragment parsing into one yields only text)
-found no violation in any document or fragment context. The `template for` patching rule is specified but not
+found no violation in documents or the fuzzer's fragment contexts (reparses checked in the 14.3M cases not discarded). The `template for` patching rule is specified but not
 implemented in any build:
 
 | # | Corner | Introduced by proposal? | Closable in the spec PR? |
@@ -84,7 +85,7 @@ spec-reading items are the only other parser-producible sources.
 
 ### `template for` and template namespaces ([#11818](https://github.com/whatwg/html/issues/11818), [#12976](https://github.com/whatwg/html/issues/12976), [#13100](https://github.com/whatwg/html/issues/13100))
 
-Fuzzed in Chrome Canary 160 (today's parsing, which has HTML PIs and `template for`; 4M baseline cases and 5.5M with PI
+Fuzzed in Chrome Canary 160 (today's parsing, which has HTML PIs and `template for`; 4.05M baseline cases and 5.55M with PI
 and patching content; `fuzz/RESULTS.md`), and [#13100](https://github.com/whatwg/html/issues/13100) read from its diff (not implemented in any engine yet).
 
 - **PIs alone add no class in today's Chrome.** Every finding signature that contains a PI still occurs with `<?` replaced by
@@ -134,18 +135,19 @@ and patching content; `fuzz/RESULTS.md`), and [#13100](https://github.com/whatwg
 
 Fuzzer, Firefox with `dom.parser.foreign_rawtext.mode` (0 today, 2 RCDATA, 3 RCDATA with comments dropped, 4 the
 full proposal, 5 mode 4 plus self-closing breakout, with two later fixes): about 19.5M, 13.4M, 16.4M and 17.4M cases for
-modes 0, 2, 3 and 4, about 20M for mode 5 before the fixes and 23.5M after; Chrome Canary 2.6M baseline cases and a further
-9.5M with PIs and `template for`. Generators:
+modes 0, 2, 3 and 4, 20.5M each for mode 5 and for 5b (the first fix), and 23.5M for 5c; Chrome Canary 2.6M baseline cases and a further
+9.6M in the PI and `template for` runs (4.05M without PIs, 5.55M with). Generators:
 grammar-based tag soup, mutation, real-page seeds, and dedicated ones for namespace pivots, script double-escape,
 self-closing breakout, foreign fragment contexts and DOM-built trees. 30+ reparse contexts, up to three rounds, a
 sanitizer-pruning model, and a JS serializer for emulating pre-[#6362](https://github.com/whatwg/html/issues/6362) output.
 
 Calibration (what a "no finding" is worth):
 - Known published seeds: of 31 vectors, mode 0 flags 15 and Chrome 13. Modes 2, 3 and 4 flag 4 (the noscript and sink-context
-  seeds only). The other 16 are outside what a same-engine canary oracle can express (sanitizer-side bugs, historic engine bugs,
-  DOM-built nodes, structural-only seeds).
+  seeds only). Per the seed notes, the 16 mode 0 misses are mostly outside what a same-engine canary oracle can express
+  (sanitizer-side parser bugs, historic engine bugs, a server parser vs a browser, a DOM-created node, `selectedcontent`
+  re-cloning, structural-only seeds or ones without a working gadget); one has no stated reason.
 - From scratch with no seeds, today's Firefox and Chrome rediscover namespace-pivot findings by the hundreds of thousands (about
-  168,000 in 12M cases in mode 0), so the fuzzer has power. In mode 4 that class falls to HTML `script` text
+  172,700 `same`/`toHtml`/`toForeign` findings in 12M cases in mode 0, 167,791 of them `toForeign`), so the fuzzer has power. In mode 4 that class falls to HTML `script` text
   (~1,300) plus the self-closing corner above.
 - The fuzzer rediscovered corner 2 independently of the spec enumeration, which predicted it.
 
@@ -155,8 +157,8 @@ Limits:
 - This build has no HTML PI parsing, `template for` or declarative shadow DOM, and the PI handling in mode 4
   treats `<?…>` as a bogus comment.
 - 8 of 30+ reparse contexts are tried per case.
-- 23 content-process crashes in long batches (17 in mode 0, 6 in mode 4) that don't reproduce when replayed
-  alone.
+- 23 content-process crashes in long batches (17 in mode 0, 6 in mode 4, in `private/crash-specs.json`) that don't
+  reproduce when replayed alone; one more each in the mode 2 and mode 3 logs wasn't replayed.
 
 ## The plan in detail
 
@@ -166,20 +168,23 @@ The same items with the reasons and the evidence behind each.
 2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing
    `<!--` or `<script` (ASCII case-insensitive), and drop element, comment and PI children of `script` (a nested `script` element's end tag would end an HTML `script` early), even when the config allows `script`; the opt-in serializer mode does both. The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
-3. Make `template for` patching into an SVG/MathML `title`, `style`, `script` or `noscript` insert the patch's text nodes as
-   they are, its comments and PIs unless their data contains `</`, and drops element children (a comment
-   nested in an element child would otherwise reach the serialization as markup text). Text in these elements is escaped on
+3. In tree construction (insert an element, insert a comment, insert a PI, and the adoption agency algorithm), never insert an
+   element into an SVG/MathML `title`, `style`, `script` or `noscript`, and drop a comment or PI whose data contains `</`
+   when that element isn't the current node; text is kept. The parser can only reach those cases through `template for`
+   patching, redirected insertions, or an insertion target (such as a foster-parenting `table`) that script moved into the
+   element (a comment nested in an element child would otherwise reach the serialization as markup text). Text in these elements is escaped on
    serialization, and a comment or PI can only end the element through the start of an end tag (comment data with `<`, `x</`
    or `</titlex y` round-trips in mode 4), so patched trees stay as safe as parser-built ones, markers for later patches
    (`<?marker name="m"?>`) and comment markers still work, and a streamed `title` text works. `</` is name-independent and
-   slightly more conservative than the exact test (`</` plus the element's name, then whitespace, `/` or `>`). The check is
-   only in patching, so ordinary parsing pays nothing, and since `template for` is new there is no existing content to
+   slightly more conservative than the exact test (`</` plus the element's name, then whitespace, `/` or `>`). Parsing
+   without patching or script-moved nodes never reaches the checks, and since `template for` is new there is no existing content to
    break and no ordering constraint with the parser change. Parser-built trees, including patched ones, are the goal;
    DOM-built trees aren't (comment data with `-->` already breaks them), so there is no default serializer rule. Stored
    content from old parsers is covered by the opt-in serializer mode and the sanitizer rules.
 4. Make fragment parsing's context-element handling namespace-aware for these elements: for a foreign (SVG or MathML)
    `title`, `style`, `script` or `noscript` context element, set the tokenizer to RCDATA and disable recognition of
-   comments, PIs and bogus comments, so the whole input is text, as for an HTML `title` or `textarea` context. Otherwise
+   comments, PIs and bogus comments, so the whole input is text, as for an HTML `title` or `textarea` context, except that
+   CDATA markers are still dropped. Otherwise
    a comment child of the context element can hold the element's end tag (found by fuzzing, closed in the Gecko build).
    Also remove SVG `title` from the HTML integration point list: while it stays one, characters inside it run the "in body"
    rules, reconstruct the active formatting elements, and the title's matching end tag is processed against an HTML current

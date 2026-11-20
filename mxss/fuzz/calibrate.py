@@ -2,8 +2,9 @@
 
 usage: calibrate.py --engine firefox --binary B --mode M --label L
 Canary substitution: handler values (alert(...), xss(), 1) become the marker; seeds without a
-handler get one on their `img`/`script`. Seeds that are structural-only (no script payload) are
-flagged when the T1->T2 element multiset differs in the same context ("struct").
+handler get one on their `img`/`script`. Only a live canary flags a seed; when the T1->T2 element
+multiset differs in the same context, the seed's `struct` field records it and the table counts it
+as "struct-only", but it isn't flagged.
 Writes mxss/private/runs/calibration-LABEL.jsonl (per seed: class, flagged, via) and prints a
 class-level table (no markup).
 """

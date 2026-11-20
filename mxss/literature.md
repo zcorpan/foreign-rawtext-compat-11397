@@ -365,7 +365,8 @@ already has a simpler hole.
 ## Out of scope
 
 - XML versus HTML parse differences (DOMParser XML documents then HTML, PIs from XML,
-  `application/xhtml+xml` handling: e.g. DOMPurify 3.0.10, [GHSA-c6gr-qvv4-5v3f](https://github.com/advisories/GHSA-c6gr-qvv4-5v3f)).
+  `application/xhtml+xml` handling: e.g. DOMPurify's SMIL `attributeName` guard skipped in XHTML mode, fixed in 3.4.17 in 2026,
+  [GHSA-c6gr-qvv4-5v3f](https://github.com/advisories/GHSA-c6gr-qvv4-5v3f)).
 - Encoding and charset confusion (UTF-7, ISO-2022-JP, meta charset flips).
 - DOM clobbering (named elements shadowing `nodeName`, `parentNode`, `attributes`; DOMPurify wiki
   section 11).

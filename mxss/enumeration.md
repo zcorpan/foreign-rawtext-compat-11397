@@ -4,7 +4,8 @@ Scope: the HTML fragment serialization algorithm followed by an HTML parse. Out 
 serialization and XHTML parsing, charset/encoding confusion, DOM clobbering. "The proposal" means
 [whatwg/html#11397](https://github.com/whatwg/html/issues/11397) as in the README (breakout for `textarea`, `xmp`, `iframe`, `noembed`,
 `noframes`, `plaintext`; RCDATA with comments and PIs kept and ended by the element's end tag for
-`title`, `style`, `script`, `noscript`; CDATA markers dropped; self-closing unchanged), plus
+`title`, `style`, `script`, `noscript`; CDATA markers dropped; the six break out whether or not the start tag is
+self-closing), plus
 [#6362](https://github.com/whatwg/html/issues/6362) (merged, `<` and `>` escaped in attribute values) and [#9426](https://github.com/whatwg/html/issues/9426) (one scripting flag for all
 documents of a browser, assumed fixed).
 
@@ -15,8 +16,8 @@ Method, all from the spec text in `source` (serializer at "Serializing HTML frag
 parser setup, every tokenizer state, every insertion mode, foreign content) plus tests:
 
 - Firefox build, pref `dom.parser.foreign_rawtext.mode` 0 (today), 2 (RCDATA, comments as text) and 3
-  (RCDATA, comments dropped). The build has no breakout, no kept comments in foreign RCDATA, no PI
-  parsing and no `template for`.
+  (RCDATA, comments dropped) for this enumeration. The later campaign (`fuzz/RESULTS.md`) used modes 4 and 5 (kept comments,
+  breakout, self-closing breakout, fragment-context fixes). The build has no PI parsing and no `template for`.
 - html5lib shim `cc/frparse.py` (`rcdata-c` = comments kept, plus a local breakout patch). html5lib is
   an old parser: no `template`, PIs, customizable `select`, DSD.
 - Round-trip fuzz (parse 1 by `innerHTML`, serialize, parse 2 in 12 to 25 different context
@@ -40,9 +41,9 @@ only. "Closed" is about the proposal + [#6362](https://github.com/whatwg/html/is
 | # | Source | (1) Producible | (2) Direction | (3) Carrier and pivot | (4) Closed? Why | (5) Confidence, test |
 |---|---|---|---|---|---|---|
 | 1 | SVG/MathML `style`, `script`, `title`, `textarea`, `xmp`, `iframe`, `noembed`, `noframes`, `noscript`, `plaintext` tokenized as markup, HTML ones as raw text/RCDATA/PLAINTEXT | P | T>M | Carriers: comment, PI/bogus comment, CDATA, text with entities, attribute (via [#6362](https://github.com/whatwg/html/issues/6362)). Pivot: namespace of the element at parse 2 (context element, foster parenting or `mglyph` re-nesting, unwrapping `svg`, ignored `<svg>`, template-for patching) | Yes. Tokenizer state depends on local name only: RCDATA for four, breakout for six (so no foreign element exists to pivot from or to). Escaped serialization of foreign text plus RCDATA decoding round-trips; HTML raw text can't contain an appropriate end tag. | High. Fuzz: 216k+345k parse-2 runs, 0 T>M in modes 2 and 3 (mode 0: hundreds). Unwrap surgery over 10 elements x 2 namespaces x 6 carriers: 0 leaks with `rcdata-c` (mode 0: 32). |
-| 2 | Comment or PI inside foreign RCDATA element (new, from "kept as nodes") | P | T>M if the end tag can sit inside the node | Carrier: comment/PI data. Pivot: element read as HTML `title`/`style` (text) or as foreign | Yes, if "an appropriate end tag ends the comment/PI and the element" is implemented. Then parser-made comment/PI data never holds the element's end tag and serializes back identically. Not implemented in the Firefox build (mode 3 drops comments, mode 2 treats `<!--` as text); only the shim has it. | Medium-high. Shim `rcdata-c` only. Implementation risk: PIs end at `>`, which is the end tag's last character, so the end-tag check must win over the PI/comment end. |
+| 2 | Comment or PI inside foreign RCDATA element (new, from "kept as nodes") | P | T>M if the end tag can sit inside the node | Carrier: comment/PI data. Pivot: element read as HTML `title`/`style` (text) or as foreign | Yes, if "an appropriate end tag ends the comment/PI and the element" is implemented. Then parser-made comment/PI data never holds the element's end tag and serializes back identically. Implemented in Firefox modes 4 and 5 (mode 3 drops comments, mode 2 treats `<!--` as text), and in the shim. | Medium-high. Shim `rcdata-c` only. Implementation risk: PIs end at `>`, which is the end tag's last character, so the end-tag check must win over the PI/comment end. |
 | 3 | CDATA section (only when the adjusted current node is foreign) vs bogus comment | P | M>T / comment | Carrier: CDATA text (raw `<`). Pivot: foreign or not at tokenization | Not needed. CDATA content becomes text and serializes escaped; in HTML the bogus comment ends at the first `>`; both re-serialize to something that reparses the same. Markers dropped inside the four elements. | High. Exhaustive carrier enumeration. |
-| 4 | Self-closing foreign raw element (kept as today) | P | none | The serializer never emits `/>`, always start and end tag, so an emptied element reparses as start tag, end tag, with nothing between | Not needed: whatever follows a self-closed element is already markup in parse 1. | High (spec reading). |
+| 4 | Self-closing foreign `textarea`, `xmp`, `iframe`, `noembed`, `noframes`, `plaintext` | P | T>M | The serializer never emits `/>`, always start and end tag, so a self-closed element stays foreign and empty in parse 1 but breaks out on reparse, changing the namespace of what follows | **Yes, once the six break out regardless of the self-closing flag** (found by fuzzing; Firefox mode 5). Keeping today's behavior for self-closing tags is not closed. | High (spec reading, by hand, fuzzing). |
 | 5 | **HTML `script` double-escape**: text starting with a comment opener and a `script` start tag keeps the first `</script>` as text; serialized literally | P (needs an HTML `script` kept) | T>M | Carrier: HTML script data text. Pivot: parse 2 reads the same `script` as foreign RCDATA, which ends at the first end tag | **No, introduced by the proposal.** Today foreign script reparse is inert for this shape; with RCDATA it ends early. Only context pivots to SVG (e.g. `svgG.innerHTML`) hit it; MathML text integration points parse `script` as HTML. | High that it exists (Firefox modes 2 and 3 reproduce, mode 0 doesn't). Impact bounded: needs a sanitizer that keeps `script`. README already notes this. |
 | 6 | `noscript` and the scripting flag: HTML `noscript` with scripting off has element/comment children, scripting on has RAWTEXT | P | T>M | Carrier: comment (attribute closed by [#6362](https://github.com/whatwg/html/issues/6362)), or literal text of a raw child element (`plaintext`, `xmp`, `style`...) inside `noscript`. Pivot: scripting flag at parse 2, or foreign `noscript` (RCDATA regardless of flag) | [#9426](https://github.com/whatwg/html/issues/9426) closes it inside one browser. Survives across parsers with different flags (server-side libraries default to scripting off; users with JS off) and foreign `noscript` is flag-independent, so scripting-off HTML `noscript` reparsed as foreign still differs. Also seen in the Firefox build: `noscript` in `template` contents is parsed scripting-on but serialized scripting-off. | High for the mechanism (shim reproduces). Not tested in a scripting-off browser (selenium `innerHTML` ignored the pref). |
 | 7 | `plaintext`: serializer appends `</plaintext>` and the ancestors' end tags, which parse 2 reads as text | P | M>T (benign growth); T>M only where parse 2 ignores `plaintext` | Carrier: PLAINTEXT text. Pivot: fragment context whose insertion mode ignores the start tag (`colgroup`, `frameset`) | Not addressed, and nothing new. Fuzz: only inert gain (content ends up in `template` contents, which `colgroup` accepts), never live. | Medium-high. Fuzz over 25 contexts plus per-element context matrix. |
@@ -70,7 +71,7 @@ only. "Closed" is about the proposal + [#6362](https://github.com/whatwg/html/is
 | 19 | HTML `style`, `script`, `xmp`, `iframe`, `noembed`, `noframes`, `plaintext`, `noscript` (scripting on) with text holding an end tag; literal serialization | D, and P through fragment parsing with a raw context element (`style.innerHTML = ...`, no appropriate end tag in fragments) | T>M | Carrier: raw text. No pivot needed. | No: by design the serializer emits text literally. | High. Firefox dom battery. |
 | 20 | HTML `title`, `textarea` with comment or element children (comments literal, elements literal) | D | comment T>M; element M>T | Carrier: comment data holding the end tag | No. | High. dom battery. |
 | 21 | **Foreign `title`, `style`, `script`, `noscript` with comment, PI or element children, or a foreign `textarea`/`xmp`/... with children at all** | D, and P through `template for` patching into a marker PI inside the element, and through a foreign fragment context if the fragment spec isn't updated (row 22) | T>M | Carrier: comment/PI data or the literal text of an HTML raw child. Pivot: none; same namespace is enough now | **No, and newly dangerous.** Today such children are inert in the same namespace and dangerous only after a namespace pivot. With RCDATA they are dangerous without a pivot. For the `template for` route the planned answer is that patching into these elements keeps text, keeps comments and PIs unless their data contains `</`, and drops element children (no default serializer rule: DOM-built trees aren't a goal, and the rule would miss comments nested in patched elements); flattening children stays in the opt-in serializer mode for stored content. | High for DOM-built (Firefox modes 2 and 3 leak, mode 0 doesn't, for comment child, element child holding raw text, PI with `>`). Medium for the `template for` route (spec reading, no engine). |
-| 22 | Fragment parsing with a foreign raw element as context element (`svgStyle.innerHTML`) | P | T>M / structure | Spec text of "initialize an HTML fragment parser" switches on the context element's name, namespace-blind by convention (HTML only); Firefox mode 0 leaves the data state for SVG `style` | Only if the PR also changes this step to RCDATA (the Firefox mode 2 behaviour). Otherwise elements and comments land inside foreign RCDATA elements (row 21). | High (tested; mode 2 and 3 do it). Spec edit needed. |
+| 22 | Fragment parsing with a foreign raw element as context element (`svgStyle.innerHTML`) | P | T>M / structure | Spec text of "initialize an HTML fragment parser" switches on the context element's name, namespace-blind by convention (HTML only); Firefox mode 0 leaves the data state for SVG `style` | Yes, with the plan's change to this step: fragment parsing into a foreign `title`, `style`, `script` or `noscript` context yields text only (and SVG `title` is no longer an integration point). Otherwise elements and comments land inside foreign RCDATA elements (row 21). | High (tested in Firefox mode 5 in every fragment context). Spec edit needed. |
 | 23 | DOM-only SVG/MathML `textarea`, `xmp`, ... (breakout elements) | D | S, then as row 21 | Pivot: breakout at parse 2 makes them HTML; trailing siblings and ancestors' end tags are read as text for `plaintext` | No (DOM content). Serializer opt-in mode drops them. | Medium-high. |
 
 ### Structure
@@ -136,7 +137,7 @@ only. "Closed" is about the proposal + [#6362](https://github.com/whatwg/html/is
 
 ## What the proposal does not address
 
-- DOM-only content: rows 14, 15, 19, 20, 21, 23, 28. The serializer can't be an inverse for trees
+- DOM-only content: rows 14, 15, 19, 20, 21 (DOM-built part), 23, 28. The serializer can't be an inverse for trees
   whose raw/RCDATA elements hold comments, PIs, elements or text with end tags. The opt-in
   serializer mode (step 3 of the plan) is the mitigation, and has to be used by whoever serializes
   sanitizer output.
@@ -154,34 +155,33 @@ only. "Closed" is about the proposal + [#6362](https://github.com/whatwg/html/is
 
 ## Conclusion
 
-Within one updated browser, with one scripting flag, [#6362](https://github.com/whatwg/html/issues/6362), and the proposal as specified in the
-README (including comments/PIs ended by the element's end tag), I could not make any tree the parser
-produces round-trip into new markup: 0 text/attribute/comment-to-markup cases in about 1.1M randomized
-parse-2 runs on Firefox modes 2 and 3, 0 in about 100k shim runs of `rcdata-c` with breakout, 0 in
-418,730 exhaustive carrier strings, 0 after `svg`/`math` unwrap surgery. The namespace/tokenizer
-pivot, which was the common cause, is closed because tokenization no longer depends on the
-element's namespace for the ten element names.
+For trees the parser builds, in one updated browser with one scripting flag, [#6362](https://github.com/whatwg/html/issues/6362) and the plan
+in `README.md` (RCDATA with kept comments and PIs, breakout for the six including self-closing, text-only foreign fragment
+contexts, the `template for` patching rule), I could not make any tree round-trip into new markup. This enumeration's own
+runs: 0 text/attribute/comment-to-markup cases in about 1.1M randomized parse-2 runs on Firefox modes 2 and 3, 0 in about
+100k shim runs of `rcdata-c` with breakout, 0 in 418,730 exhaustive carrier strings, 0 after `svg`/`math` unwrap surgery. The
+later campaign on the implementation of the plan (about 23.5M cases) found no violation of the direct invariant check.
+The namespace/tokenizer pivot, the common cause, is closed because tokenization no longer depends on the element's
+namespace for the ten element names.
 
-That is not the same as "the last root cause". Four gaps remain on the parser-producible side,
-each needing something the proposal doesn't say:
+What the enumeration found beyond the original proposal, and where each stands:
 
-1. Row 5: HTML `script` double-escape reparsed as foreign RCDATA `script` (introduced by the
-   proposal; needs a sanitizer that keeps `script`).
-2. Row 21/22: foreign RCDATA elements gaining element/comment/PI children, via `template for`
-   patching into a marker PI inside them, or via fragment parsing with a foreign context element if
-   that step isn't updated. The first is handled in patching (text kept, comments/PIs kept unless they contain `</`, elements dropped).
-3. Row 6: `noscript` across parsers with different scripting flags, and flag-independent foreign
-   `noscript`.
-4. DOM-only content (rows 14, 15, 19 to 21, 23), which the proposal makes broader for foreign raw
-   elements.
+1. Row 4: self-closing breakout elements. Closed by breaking out regardless of the self-closing flag.
+2. Rows 21 and 22: foreign RCDATA elements gaining element, comment or PI children, via `template for` patching or a foreign
+   fragment context. Closed by the plan's patching rule and text-only fragment contexts (the patching rule is specified but
+   not implemented in any build).
+3. Row 5: HTML `script` double-escape against foreign RCDATA `script`. Accepted exception, with the sanitizer rule.
+4. Row 6: `noscript` across scripting flags. Depends on [#9426](https://github.com/whatwg/html/issues/9426).
 
-Confidence: high (about 90%) that the proposal closes the namespace-confusion class it targets in
-the parser-producible space; moderate (about 70%) that rows 5, 6, 21 and 22 are the only other
-parser-producible text-to-markup sources, because the Firefox build lacks breakout, kept
-comments/PIs, `template for` and DSD tests, the shim is html5lib (old spec), and `select` p1 fuzz
-timed out. The claim "last root cause of HTML mXSS" is false as stated unless DOM-only content, the
-`script`/`noscript` residues and the template-for interaction are excluded or fixed.
+Rows 14, 15, 19, 20, 23 and 28 (DOM-built trees) and sink-context mismatches aren't parse-serialize-parse mismatches of
+parser output, so they're out of scope for the question, not open gaps in the proposal. The opt-in serializer mode is the
+mitigation for whoever serializes sanitizer output.
 
-How I'd test the rest: implement `rcdata-c` plus breakout in the Firefox build and rerun the
-round-trip fuzz with PIs, DSD and `template for` once those exist; add a scripting-off run; fuzz
-fragment contexts that are foreign raw elements; add a wpt test per row 2, 5, 21, 22.
+Confidence, as estimated from this enumeration before the later campaign: about 90% that the proposal closes the
+namespace-confusion class it targets in the parser-producible space, about 70% that the rows above are the only other
+parser-producible text-to-markup sources (the build lacked breakout, kept comments, `template for` and DSD, the shim is
+html5lib, and `select` parse-1 fuzzing timed out). The campaign, run on the implementation of the plan, found no further class.
+
+Not tested: `template for`, PIs and DSD in a Firefox build, other engines' parsers (Safari, Chromium with the proposal), and
+a scripting-off run of the fuzzer. wpt tests for the tokenization, breakout and fragment-context rows exist only as tentative tests in the Gecko work (not
+upstreamed); there are none for the `template for` rule.

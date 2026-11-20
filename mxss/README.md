@@ -10,11 +10,51 @@ in `mxss/private/` (git-ignored).
 
 ## Answer
 
-**I think so, for parser-built trees, with caveats.** The proposal closes the class that every published post-#6362
-bypass relied on: text, comment, PI or attribute carriers hiding markup in raw text or RCDATA, with a namespace pivot
-changing how the element's end tag is read. In 17.4M Firefox cases with the full proposal as first implemented there is no
-finding of that kind. The fuzzing found three parser-producible corners, plus two implementation gaps that the proposal's
-spec text has to rule out (the title end-tag desync and fragment contexts, below). With those fixed in the Gecko build
+**Yes, for parser-built trees.** With the plan below, no text, comment, PI or attribute value that is inert in one
+parse of HTML can become markup in the next, in every context we tried, for trees the parser builds (including
+`template for` patches), apart from the two accepted exceptions listed under Scope. The proposal itself closes the class
+that every published post-#6362 bypass relied on: markup hidden in raw text or RCDATA, with a namespace pivot changing how
+the element's end tag is read. Fuzzing and a spec enumeration found a few gaps in the first version of the proposal; the
+plan includes their fixes, and "How we got here" below shows how.
+
+**The plan** (reasoning in "The plan in detail"):
+- #11397's tokenization: SVG/MathML `title`, `style`, `script` and `noscript` are RCDATA, with comments and PIs kept as
+  nodes (the element's end tag still ends them), and `textarea`, `xmp`, `iframe`, `noembed`, `noframes` and `plaintext`
+  break out of foreign content, whether or not the start tag is self-closing.
+- Fragment parsing into a foreign `title`, `style`, `script` or `noscript` context element yields text only, SVG `title`
+  stops being an HTML integration point, and the tree builder pops a foreign RCDATA element when its end tag ends RCDATA.
+- `template for` patching into those elements keeps text, keeps comments and PIs without `</`, and replaces element
+  children by their text.
+- #9426: only a browser whose user or sandbox actually disabled scripting parses with the scripting flag off.
+- #11397's tokenization lands before or with #13100's `contentnamespace`, and #13100 is aligned with it.
+- For stored content and server-side sanitizers: an opt-in serializer mode, and sanitizer rules (reject `script` text
+  containing `<!--` or `<script`, parse with scripting enabled, drop `noscript`).
+
+**Evidence.** 23.5M Firefox cases on the implementation of the plan found no violation of a direct invariant check (foreign
+RCDATA elements hold only text, comments and PIs, none containing the start of the element's end tag; fragment parsing into
+one yields only text) in documents and in every fragment context, with the canary oracle showing only the leftovers
+listed under Scope. The same checks flag today's parsing by the hundreds of thousands and the earlier builds of the
+proposal, so a clean result means something. The fuzzing is backed by a catalog of 16 published root-cause classes
+(`literature.md`) and a spec enumeration of every place serialization isn't the inverse of parsing (`enumeration.md`).
+
+**Scope.**
+- Accepted exceptions: the HTML `script` double-escape (needs a sanitizer that keeps `script`, which must reject its text when
+  it contains `<!--` or `<script`) and `noscript` across scripting flags (depends on #9426).
+- Specified but not in any build yet: the `template for` patching rule and the opt-in serializer mode.
+- Out of scope: DOM-built trees (comment data with `-->` already breaks them), inserting the output into a different context
+  than the sanitizer parsed it for (such as a `<textarea>` the application adds around it), sanitizer-side parser or
+  serializer bugs, browser-generated DOM after a sanitizer walk (`selectedcontent`, shadow DOM), structural pivots (form
+  nesting, foster parenting: they rearrange structure but have no raw-text carrier to hide markup in).
+- This applies to updated engines. Stored or server-sanitized content stays exposed to the old classes until old browsers go
+  away (see "Transition risk" in the top-level README).
+
+## How we got here
+
+### Corners found by fuzzing
+
+The proposal as first implemented already had no finding of the published kind (text, comment, PI or attribute carriers hiding
+markup in raw text or RCDATA, with a namespace pivot) in 17.4M Firefox cases. The fuzzing found three parser-producible corners, plus two implementation gaps that the
+proposal's spec text has to rule out (the title end-tag desync and fragment contexts, below). With those fixed in the Gecko build
 (mode 5, commit `5873e678`), 23.5M further cases with a direct invariant oracle (foreign RCDATA elements hold only text,
 comments and PIs, none of which contains the start of the element's end tag; fragment parsing into one yields only text)
 found no violation in any document or fragment context. The `template for` patching rule is specified but not
@@ -36,21 +76,13 @@ keep only the safe parts there (suggested change 3). DOM-built trees aren't a go
 Fragment parsing with a foreign context element (`title`, `style`, `script`, `noscript`; the six breakout elements)
 must be namespace-aware.
 
-Not addressed by a parser change, and out of scope: DOM-built trees (comment data with `-->` already breaks them) and
-inserting the output into a different context than the sanitizer parsed it for, such as a `<textarea>` or `<xmp>` the
-application adds around it (the `rawctx` and `wrap` findings, present in every configuration including today's). Also not
-addressed by the parser change:
-- Browser-generated DOM after a sanitizer walk (`selectedcontent`, `template for`, shadow DOM).
-- Sanitizer-side parser or serializer non-conformance.
-- Structural pivots (form nesting, foster parenting): they remain, but with no raw-text carrier they only
-  rearrange structure.
+What the parser change doesn't address is listed under Scope above.
 
-Confidence (the enumeration's estimate, adjusted for the fuzz results): about 90% that the namespace-confusion
-class is closed once corners 1 and 2 are handled; about 70% that corners 1 to 3 and the spec-reading items are the only other
-parser-producible sources. Everything above applies only to updated engines; stored or server-sanitized content
-stays exposed to the old classes until old browsers go away (see "Transition risk" in the top-level README).
+Earlier confidence estimate (the enumeration's, made before the final campaign, which found no further class): about 90%
+that the namespace-confusion class is closed once corners 1 and 2 are handled; about 70% that corners 1 to 3 and the
+spec-reading items are the only other parser-producible sources.
 
-## `template for` and template namespaces (#11818, #12976, #13100)
+### `template for` and template namespaces (#11818, #12976, #13100)
 
 Fuzzed in Chrome Canary 160 (today's parsing, which has HTML PIs and `template for`; 4M baseline cases and 5.5M with PI
 and patching content; `fuzz/RESULTS.md`), and #13100 read from its diff (not implemented in any engine yet).
@@ -92,7 +124,7 @@ and patching content; `fuzz/RESULTS.md`), and #13100 read from its diff (not imp
   - Serializing `contentnamespace` on every `template` is good for round trips and harmless to old parsers (an unknown attribute).
 - **Not tested:** the proposal in Chrome (not built), and #13100 anywhere.
 
-## Evidence
+### Evidence and calibration
 
 | Method | What | Files |
 |---|---|---|
@@ -126,7 +158,9 @@ Limits:
 - 23 content-process crashes in long batches (17 in mode 0, 6 in mode 4) that don't reproduce when replayed
   alone.
 
-## Suggested changes to the proposal
+## The plan in detail
+
+The same items with the reasons and the evidence behind each.
 
 1. Break out the six elements regardless of the self-closing flag (corner 1).
 2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing

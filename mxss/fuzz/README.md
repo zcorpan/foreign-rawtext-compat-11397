@@ -1,8 +1,8 @@
-# Differential mXSS fuzzer (whatwg/html#11397)
+# Differential mXSS fuzzer ([whatwg/html#11397](https://github.com/whatwg/html/issues/11397))
 
-Question: with #11397 (breakout for `textarea`, `xmp`, `iframe`, `noembed`, `noframes`, `plaintext`;
-RCDATA for SVG/MathML `title`, `style`, `script`, `noscript`), #6362 (`<`/`>` escaped in
-attributes) and #9426 (one scripting flag), is HTML parse, serialize, parse mXSS closed? This
+Question: with [#11397](https://github.com/whatwg/html/issues/11397) (breakout for `textarea`, `xmp`, `iframe`, `noembed`, `noframes`, `plaintext`;
+RCDATA for SVG/MathML `title`, `style`, `script`, `noscript`), [#6362](https://github.com/whatwg/html/issues/6362) (`<`/`>` escaped in
+attributes) and [#9426](https://github.com/whatwg/html/issues/9426) (one scripting flag), is HTML parse, serialize, parse mXSS closed? This
 fuzzer looks for counterexamples and, on baseline engines, checks that it can rediscover the known
 classes (`mxss/literature.md`, M1 to M16). XML and XHTML are out of scope.
 
@@ -76,12 +76,12 @@ Canaries carry unique ids (`X7Q<n>`) and are `img onerror`, `svg onload`, `body 
 
 Scripting flag: documents from `DOMParser` have scripting disabled for parse and serialization in
 Firefox and Chrome, but Firefox always parses fragments (`innerHTML`) with scripting enabled
-(`nsHtml5StringParser::ParseFragment`), unlike Chrome. To emulate #9426, cases containing
+(`nsHtml5StringParser::ParseFragment`), unlike Chrome. To emulate [#9426](https://github.com/whatwg/html/issues/9426), cases containing
 `noscript` use only `DOMParser` documents (T1 and T2) in the main runs. Separate `noscriptmix`
-runs lift this to measure the pre-#9426 differential (expected to be flagged in every mode).
+runs lift this to measure the pre-[#9426](https://github.com/whatwg/html/issues/9426) differential (expected to be flagged in every mode).
 Serialization is the browser's own, or (calibration only) a JS implementation of the spec
 algorithm. It matches Firefox byte for byte (20,000 cases) but not Chrome (7% differ), so Chrome runs use
-its native serializer. The `legacy` option drops #6362 escaping, to rediscover pre-#6362 classes.
+its native serializer. The `legacy` option drops [#6362](https://github.com/whatwg/html/issues/6362) escaping, to rediscover pre-[#6362](https://github.com/whatwg/html/issues/6362) classes.
 
 ## Generators
 
@@ -126,7 +126,7 @@ range is skipped.
 - Seeds that can't be flagged on any modern baseline (sanitizer-side parser bugs, historic engine
   bugs, DOM-created nodes, parse-time cloning) mark the oracle's scope, not failures.
 
-## PIs and `template for` (Chrome Canary, whatwg/html#12118 and #11818)
+## PIs and `template for` (Chrome Canary, [whatwg/html#12118](https://github.com/whatwg/html/issues/12118) and [#11818](https://github.com/whatwg/html/issues/11818))
 
 Entry points that parse HTML PIs as nodes and patch `template for` in Canary 160: `DOMParser`, `innerHTML` (fragment parsing,
 any context element), `setHTMLUnsafe`, `Document.parseHTMLUnsafe`, `document.write` into a `createHTMLDocument` document, and

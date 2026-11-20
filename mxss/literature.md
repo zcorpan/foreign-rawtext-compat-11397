@@ -3,7 +3,7 @@
 Class-level only: mechanisms in words and tag names, no working payloads. Calibration inputs are
 kept separately (untracked) in `mxss/private/seeds.jsonl`.
 
-Question: is whatwg/html#11397 (plus whatwg/html#6362, merged; plus whatwg/html#9426, assumed
+Question: is [whatwg/html#11397](https://github.com/whatwg/html/issues/11397) (plus [whatwg/html#6362](https://github.com/whatwg/html/issues/6362), merged; plus [whatwg/html#9426](https://github.com/whatwg/html/issues/9426), assumed
 fixed) the last known root cause of HTML-to-HTML parse, serialize, parse mXSS?
 
 Short answer: it plausibly closes the last known *tokenization-driven* class for trees the HTML
@@ -15,7 +15,7 @@ serializers remain, and none of them is touched by the three changes. Details be
 ## Terms
 
 - **Carrier**: a place where markup-looking text sits inertly in parse 1 and the serializer
-  writes it out verbatim. Possible carriers: attribute value (verbatim `<`/`>` before #6362),
+  writes it out verbatim. Possible carriers: attribute value (verbatim `<`/`>` before [#6362](https://github.com/whatwg/html/issues/6362)),
   text of an element the serializer writes literally (`style`, `script`, `xmp`, `iframe`,
   `noembed`, `noframes`, `plaintext`, `noscript` with scripting), comment, PI/bogus comment,
   CDATA section.
@@ -23,10 +23,10 @@ serializers remain, and none of them is touched by the three changes. Details be
   namespace flip of an ancestor, the scripting flag, the fragment context or insertion mode, an
   ancestry change (form nesting, foster parenting, depth flattening), removal or rewriting of
   nodes between the parses, or a node the parser cannot create.
-- Status columns are cumulative: (a) the spec before #6362, which is the state the historical
-  bypasses were found against; (b) plus #6362; (c) plus #9426 (scripting flag no longer depends on
-  the document); (d) plus the #11397 proposal. "Closed" means closed for conformant, updated
-  engines and parser-created trees. Old browsers, non-conformant serializers (shipping #6362
+- Status columns are cumulative: (a) the spec before [#6362](https://github.com/whatwg/html/issues/6362), which is the state the historical
+  bypasses were found against; (b) plus [#6362](https://github.com/whatwg/html/issues/6362); (c) plus [#9426](https://github.com/whatwg/html/issues/9426) (scripting flag no longer depends on
+  the document); (d) plus the [#11397](https://github.com/whatwg/html/issues/11397) proposal. "Closed" means closed for conformant, updated
+  engines and parser-created trees. Old browsers, non-conformant serializers (shipping [#6362](https://github.com/whatwg/html/issues/6362)
   lagged: Nokogiri 1.19.5, Nov 2026) and server-side parsers keep their own status.
 
 ## Summary table
@@ -38,7 +38,7 @@ serializers remain, and none of them is touched by the three changes. Details be
 | M3 | Delimiter spanning: comment or CDATA opener in raw text in parse 1, markup-level comment in parse 2, closer elsewhere | opener in raw text; closer in an attribute value (published), or in literal text or another comment (unpublished, derived) | namespace flip | not closed | closed for attribute closers; unsure for the derived ones | same as (b) | closed |
 | M4 | Foreign element holds a comment/PI/CDATA containing the element's end tag; raw text in parse 2 | comment, PI, CDATA in foreign `style`/`title`/`script`/`textarea`/... | namespace flip | not closed | not closed | not closed | closed for parser-created nodes |
 | M5 | `noscript` scripting-flag differential | attribute (parse 1 disabled, parse 2 enabled); comment, PI; reverse direction (enabled to disabled): literal text | scripting flag differs between parses (DOMParser, template, other documents, server-side parsers, user-disabled scripting) | not closed | closed for attributes only | closed for browser-internal parses; not closed for external parsers; unsure for users with scripting off | same as (c); foreign `noscript` part closed |
-| M6 | Re-contextualization: sink context differs from parse-1 context | attribute (closed by #6362), comment, PI, literal text of `style`/`script`/`xmp`/..., markup not valid in the sink's insertion mode | sink wraps output in or sets `innerHTML` on `textarea`, `title`, `xmp`, `iframe`, `noembed`, `noframes`, `noscript`, `style`, `script`, `plaintext`, `select`, `table`, `frameset`, SVG/MathML elements; `document.write` | not closed | closed for attributes only | not closed | not closed (SVG/MathML `style`/`title` sinks become consistent; the rest unchanged) |
+| M6 | Re-contextualization: sink context differs from parse-1 context | attribute (closed by [#6362](https://github.com/whatwg/html/issues/6362)), comment, PI, literal text of `style`/`script`/`xmp`/..., markup not valid in the sink's insertion mode | sink wraps output in or sets `innerHTML` on `textarea`, `title`, `xmp`, `iframe`, `noembed`, `noframes`, `noscript`, `style`, `script`, `plaintext`, `select`, `table`, `frameset`, SVG/MathML elements; `document.write` | not closed | closed for attributes only | not closed | not closed (SVG/MathML `style`/`title` sinks become consistent; the rest unchanged) |
 | M7 | Spec-compliant structural non-roundtrip (pivot only) | none of its own; needs a carrier from another class; text adjacency (see M11) | form element pointer, foster parenting, adoption agency, `p` closed by block start tag, table/caption, select content model, implementation-defined nesting depth limits, integration points | pivot present | pivot present | pivot present | pivot present, but its published carriers are gone |
 | M8 | Removal or rewrite between parses creates the pivot | same as M1 to M6 | sanitizer drops an element but keeps children, drops attributes that decide namespace (`annotation-xml` `encoding`), unwraps integration points | not closed | partly | partly | partly (tokenization carriers closed; element-identity flips unsure) |
 | M9 | DOM-created nodes the parser cannot produce | text of HTML raw text element containing its end tag; comment containing `-->`; PI containing `>`; case-preserved or odd names; HTML-namespace element under SVG/MathML parent | none needed | not closed | not closed | not closed | not closed (except HTML `style`-like element under SVG/MathML parent, which becomes safe) |
@@ -76,7 +76,7 @@ HtmlSanitizer 2023 (CVE-2023-44390,
 ammonia 2025 ([RUSTSEC-2025-0071](https://rustsec.org/advisories/RUSTSEC-2025-0071),
 [GHSA-mm7x-qfjj-5g2c](https://github.com/advisories/GHSA-mm7x-qfjj-5g2c)); ammonia 2026
 ([GHSA-9jh8-v38h-cvhr](https://github.com/advisories/GHSA-9jh8-v38h-cvhr), CVE-2026-63430).
-The ammonia advisories list exactly the ten elements of #11397 as the gadget set.
+The ammonia advisories list exactly the ten elements of [#11397](https://github.com/whatwg/html/issues/11397) as the gadget set.
 
 Status: not closed in (a) to (c): the carrier is text, so attribute escaping and the scripting
 flag are irrelevant. Closed in (d): after the change every one of the ten elements is either
@@ -87,7 +87,7 @@ The repo's own check (`mxss-check.html`, shape A) shows this for the six HTML-li
 
 Mechanism: in parse 1 a foreign `style`, `title` and so on is an ordinary element whose children
 are parsed as markup, so an element's attribute value can contain the end tag of the parent as
-plain attribute text. Before #6362 the serializer wrote `<` and `>` raw in attributes. In parse 2
+plain attribute text. Before [#6362](https://github.com/whatwg/html/issues/6362) the serializer wrote `<` and `>` raw in attributes. In parse 2
 a pivot makes the parent an HTML element, whose raw text ends at the first matching end tag,
 even inside the former attribute, and what follows is live markup.
 
@@ -99,7 +99,7 @@ DOMPurify 2.2.3 (Sonar cheatsheet); Google Search 2019 and the 2025 Google write
 ([Bughunters](https://bughunters.google.com/blog/escaping-and-in-attributes-how-it-helps-protect-against-mutation-xss),
 [Chrome blog](https://developer.chrome.com/blog/escape-attributes)).
 
-Status: not closed in (a). Closed by (b): the Bughunters post says #6362 blocks all vectors that
+Status: not closed in (a). Closed by (b): the Bughunters post says [#6362](https://github.com/whatwg/html/issues/6362) blocks all vectors that
 depend on unescaped `<`/`>` in attributes creating tags. Mizu's later note that two-parse
 techniques broke after browsers started escaping attributes is consistent
 ([SMIL post](https://mizu.re/post/dompurify-bypass-smil-animatetransform-safari), as relayed by
@@ -157,7 +157,7 @@ Mechanism: with scripting disabled `noscript` content is parsed as elements; wit
 enabled it is raw text. A sanitizer parses in a scripting-disabled context (DOMParser, `template`,
 `createHTMLDocument`, jsdom, Nokogiri, html5lib defaults, htmlparser2, ammonia options) and the
 live page parses with scripting enabled. Carriers that survive serialization are attributes
-(before #6362), comments and PIs. In the other direction (parse 1 enabled, parse 2 disabled) text
+(before [#6362](https://github.com/whatwg/html/issues/6362)), comments and PIs. In the other direction (parse 1 enabled, parse 2 disabled) text
 in `noscript` is written literally by the serializer and becomes elements, which matters when the
 output is later adopted into a live document.
 
@@ -172,16 +172,16 @@ Sanitizer 2025 ([GHSA-g9gq-3pfx-2gw2](https://github.com/advisories/GHSA-g9gq-3p
 Nokogiri HTML5 serializer 2026
 ([GHSA-4p39-36wj-23h4](https://github.com/advisories/GHSA-4p39-36wj-23h4)); sanitize-html 2026
 ([GHSA-x3q4-9hxx-gx8m](https://github.com/advisories/GHSA-x3q4-9hxx-gx8m)); the issue behind
-#9426 itself ([whatwg/html#9426](https://github.com/whatwg/html/issues/9426)) names the Google
+[#9426](https://github.com/whatwg/html/issues/9426) itself ([whatwg/html#9426](https://github.com/whatwg/html/issues/9426)) names the Google
 Search case.
 
 Status: (a) not closed. (b) closes the attribute carrier only; comments and PIs still carry.
-(c): per #9426's text, the flag then depends only on the user's setting, so DOMParser, `template`
+(c): per [#9426](https://github.com/whatwg/html/issues/9426)'s text, the flag then depends only on the user's setting, so DOMParser, `template`
 and the live document agree, and the browser-internal parse-1 versus parse-2 mismatch goes away.
 Not closed for server-side or library parsers that choose their own flag (the 2023 to 2026
 advisories above are all of this kind), and unsure for users who disable scripting (parse 2 then
 makes elements, but no script runs; resource loads and later adoption into a scripting-enabled
-document are the risk, which I did not analyze). Also unsure whether #9426 leaves
+document are the risk, which I did not analyze). Also unsure whether [#9426](https://github.com/whatwg/html/issues/9426) leaves
 `template`-contents behavior (Gecko and Blink differ today) fully aligned. (d) adds only the
 foreign `noscript` part.
 
@@ -275,10 +275,10 @@ selected `option` and refreshes after the walk
 CVE-2026-47423); declarative partial updates (`template for`, PIs as markers) teleport content
 into the tree; declarative shadow DOM and attached shadow roots are invisible to a light-DOM walk
 (DOMPurify advisories GHSA-rp9w-3fw7-7cwq, GHSA-cg2g-xh64-v4q7); `template` contents use an owner
-document whose scripting flag differs between engines (see #9426). [Wiki sections 18 to
+document whose scripting flag differs between engines (see [#9426](https://github.com/whatwg/html/issues/9426)). [Wiki sections 18 to
 20](https://github.com/cure53/DOMPurify/wiki/Attack-Classes-&-Bypass-History) cover these.
 
-Status: not closed, and orthogonal to #6362 and #11397. (c) helps only the `template` flag part. (d)
+Status: not closed, and orthogonal to [#6362](https://github.com/whatwg/html/issues/6362) and [#11397](https://github.com/whatwg/html/issues/11397). (c) helps only the `template` flag part. (d)
 helps one thing: if patching inserts an HTML-namespace raw-text element into SVG/MathML, the
 later serialization reparses safely (see M9).
 
@@ -292,7 +292,7 @@ nested form. Source: DOMPurify `SAFE_FOR_TEMPLATES` bypass, 2026
 wiki section 13, CVE-2025-26791.
 
 Status: not closed by anything; it is adjacent to mXSS (client-side template injection) and does
-not need foreign content, attributes or a scripting flag. Out of reach of #11397.
+not need foreign content, attributes or a scripting flag. Out of reach of [#11397](https://github.com/whatwg/html/issues/11397).
 
 ### M12: character reference decoding differs by context
 
@@ -325,7 +325,7 @@ Chrome 77 kept a `p` inside `svg` after a stray `</p>` (securitum 2019; fixed); 
 `innerHTML` and `document.write` disagreed (2015); a Safari, Chrome and Edge `template` issue
 (DOMPurify 2.0.3, 2019); Edge `title` entities; `DOMParser` entity decoding (Feb 2019); Chrome's
 experimental DOM-import issue behind a flag (DOMPurify 2.2.0). Not closed or opened by spec
-changes. A simpler foreign-content tokenization (#11397) leaves fewer places to get wrong.
+changes. A simpler foreign-content tokenization ([#11397](https://github.com/whatwg/html/issues/11397)) leaves fewer places to get wrong.
 
 ### M15: sanitizer-side parser or serializer non-conformance
 
@@ -341,7 +341,7 @@ jsdom's raw-text parsing (DOMPurify 3.3.2 and 2.5.9, 2026); serializers that do 
 and `>` in attributes ([Nokogiri](https://github.com/advisories/GHSA-4p39-36wj-23h4),
 [Loofah GHSA-h6v6-rg66-fqj4](https://github.com/advisories/GHSA-h6v6-rg66-fqj4), 2026).
 
-Status: implementation bugs, so "not applicable" to the spec question. Still relevant: #6362 is
+Status: implementation bugs, so "not applicable" to the spec question. Still relevant: [#6362](https://github.com/whatwg/html/issues/6362) is
 the normative statement that lets Nokogiri and Loofah call the attribute case a bug; and (d)
 makes raw-text tokenization namespace-independent, which is what htmlparser2-style parsers
 already do for these ten elements, so their remaining differences shrink to non-raw-text
@@ -384,13 +384,13 @@ already has a simpler hole.
    change of a different kind. The README's "serializer mode" idea is the nearest candidate.
 3. **Parse-time DOM generation (M10).** Survives; per-feature (`selectedcontent`, `template for`,
    declarative shadow DOM). Each new feature that generates nodes after parsing reopens it.
-4. **Noscript with external parsers (M5).** After #9426, closed for browser-internal pairs, not for
+4. **Noscript with external parsers (M5).** After [#9426](https://github.com/whatwg/html/issues/9426), closed for browser-internal pairs, not for
    library parsers with their own flag and not for users with scripting disabled. Also depends on
-   what #9426 specifies for `template` contents and for `DOMParser`; I did not read the final text.
+   what [#9426](https://github.com/whatwg/html/issues/9426) specifies for `template` contents and for `DOMParser`; I did not read the final text.
 5. **Structural pivots without published carriers (M7, M8, M11).** Survive as pivots. What I
    could not rule out: an element-identity flip (SVG `image` to HTML `img`, `a`, `title`) combined
    with attributes the sanitizer allows for the SVG identity; PIs and `<template for>`
-   interacting with #12118 (PIs now parse in HTML; their serializer output and the PI
+   interacting with [#12118](https://github.com/whatwg/html/issues/12118) (PIs now parse in HTML; their serializer output and the PI
    terminator rules need a round-trip proof, and DOM or XML-created PIs can contain `>`);
    select/option content model changes (customizable select parsing, `selectedcontent`) as
    engine-version differentials during rollout; insertion-mode-dependent handling of raw-text
@@ -405,7 +405,7 @@ already has a simpler hole.
    serialize and reparse under every pivot context, and compare against a model of the new
    tokenizer.
 
-Overall: literature gives no published HTML-to-HTML mXSS that, after #6362 and #9426, is not
+Overall: literature gives no published HTML-to-HTML mXSS that, after [#6362](https://github.com/whatwg/html/issues/6362) and [#9426](https://github.com/whatwg/html/issues/9426), is not
 either (i) a foreign-versus-HTML raw-text tokenization difference (closed by the proposal), or
 (ii) an application, DOM-API, implementation-bug or new-feature class (outside it). That is
 evidence, not proof: Mizu and Kinugawa found new pivots roughly every few months from 2024 to

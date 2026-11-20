@@ -1,4 +1,4 @@
-# Compat impact of parsing SVG/MathML `style`, `script`, etc. like HTML (whatwg/html#11397)
+# Compat impact of parsing SVG/MathML `style`, `script`, etc. like HTML ([whatwg/html#11397](https://github.com/whatwg/html/issues/11397))
 
 Namespace-confusion mXSS relies on `style`, `script`, `title`, `textarea`, `xmp`, `iframe`,
 `noembed`, `noframes`, `noscript` and `plaintext` parsing as markup in SVG/MathML but as text in
@@ -128,8 +128,8 @@ In review images, today is on the left.
   - A DOM-created comment containing the end tag can still break out, as in every variant and as
     text in HTML `style` does today.
   - For PIs, compat doesn't require it: the 11 pages are all unprocessed `<?php … ?>` in SVG
-    `<title>`, plus 1 in Common Crawl. Consistency does: HTML now parses PIs (whatwg/html#12118)
-    for `<template for>` (whatwg/html#11818), and whatwg/html#13100 would allow `<template>` in
+    `<title>`, plus 1 in Common Crawl. Consistency does: HTML now parses PIs ([whatwg/html#12118](https://github.com/whatwg/html/issues/12118))
+    for `<template for>` ([whatwg/html#11818](https://github.com/whatwg/html/issues/11818)), and [whatwg/html#13100](https://github.com/whatwg/html/issues/13100) would allow `<template>` in
     SVG/MathML. It would be odd for PIs to work in most SVG elements but not in `<title>`, where
     comments work.
   - Engines without HTML PI parsing yet (the Firefox build used here) make a bogus comment for
@@ -194,7 +194,7 @@ What a sanitizer, or the pipeline around it, needs so stored content isn't affec
 - Drop comments, or at least comments (and PIs) whose data looks like markup, inside SVG/MathML
   `title`/`style`. Keep nothing that contains an end tag of a raw text or RCDATA element.
 - Escape `<` and `>` in attribute values when serializing, as the HTML Standard does since
-  whatwg/html#6362. Without that, an attribute value can contain the end tag.
+  [whatwg/html#6362](https://github.com/whatwg/html/issues/6362). Without that, an attribute value can contain the end tag.
 - Serialize CDATA sections' content as escaped text, not literally.
 - Store the sanitizer's reserialized output, not the validated original input. Pipelines that
   check "did sanitizing change anything?" and then keep the original are only as safe as the

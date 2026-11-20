@@ -6,14 +6,14 @@ canary didn't survive serialization. Scripting flag emulated as in README.md.
 
 ## Summary
 
-- Mode 4 (the full proposal) with #6362: no finding in the parser-produced HTML-to-HTML space that involves
+- Mode 4 (the full proposal) with [#6362](https://github.com/whatwg/html/issues/6362): no finding in the parser-produced HTML-to-HTML space that involves
   text, comment, PI or attribute carriers and a namespace pivot (M1 to M4 classes), in 12,000,000 from-scratch
   cases, 2,000,000 seeded, 3,000,000 targeted. Two other mechanisms still work (below), plus the known
   not-addressed ones (sink wrappers M6, DOM-built trees M9, fragment parsing into raw or foreign-raw context
   elements, scripting-flag differential M5).
 - Baseline Firefox (mode 0) and Chrome Canary rediscover M1, M3/M7-style comment carriers via structure, M4 (comment/PI
   holds the end tag in foreign `title`/`style`/`script`/...), M6, M9 from scratch. M2/M3 attribute carriers
-  need pre-#6362 serialization (emulated by the JS serializer without `<`/`>` escaping; 2,100,000 cases).
+  need pre-[#6362](https://github.com/whatwg/html/issues/6362) serialization (emulated by the JS serializer without `<`/`>` escaping; 2,100,000 cases).
 - Known-bypass calibration: all 31 published seeds evaluated; mode 0 flags 15, Chrome 13. The remaining seeds are outside
   what a same-engine canary oracle can express (sanitizer-side parser bugs M15, historic engine bugs M12 to M14,
   DOM-created nodes M9, parse-time cloning M10, structural-only seeds M7/M11 without a canary).
@@ -68,7 +68,7 @@ state- or resource-dependent, not input-determined.
 | total | 31 | 15/31 | 13/31 | 4/31 | 4/31 | 4/31 |
 
 Notes: modes 2 to 4 still flag M5 (scripting flag, calibration lifts the noscript restriction) and M6 (sink wrappers), as
-the class table predicts. Pre-#6362 emulation (legacy serializer) is used in calibration only.
+the class table predicts. Pre-[#6362](https://github.com/whatwg/html/issues/6362) emulation (legacy serializer) is used in calibration only.
 
 ## Runs
 
@@ -101,7 +101,7 @@ foreign-raw element. `wrap`: sink wrapper. `dom`: DOM-built.
 Run names: `scratch` = pure grammar, targeted and mutation generators, no seeds; `seeded` = Common Crawl SVG/MathML blocks and
 the published seeds with injected canaries (4,000 blocks from 4 WARCs of CC-MAIN-2026-39); `selfclose` = targeted
 self-closed-breakout generator; `noscriptmix` = noscript allowed in fragment contexts (scripting flag differs);
-`legacyser` = serializer without `<`/`>` attribute escaping (pre-#6362).
+`legacyser` = serializer without `<`/`>` attribute escaping (pre-[#6362](https://github.com/whatwg/html/issues/6362)).
 Totals per Firefox mode (all labels): mode 0 19,515,451, mode 2 13,400,000, mode 3 16,400,000, mode 4 17,400,000 cases.
 
 ## PIs and `template for` in Chrome Canary 160 (baseline, no proposal)

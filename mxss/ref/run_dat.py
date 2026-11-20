@@ -119,7 +119,7 @@ def collect(paths):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("paths", nargs="+")
-    ap.add_argument("--mode", default="both", choices=["old", "new", "both"])
+    ap.add_argument("--mode", default="both", choices=["old", "old1", "new", "both"])
     ap.add_argument("--last", type=int)
     ap.add_argument("--show")
     ap.add_argument("--json")

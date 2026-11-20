@@ -120,6 +120,18 @@ class TreeBuilder(base.TreeBuilder):
     documentClass = DocNode
     elementClass = Node
     commentClass = CommentNode
+
+    def insertElementTable(self, token):
+        """As html5lib's, plus the step 1 error for an element foster parented into a foreign
+        RCDATA element (the only way to insert into one while it isn't the current node without
+        content patching, which isn't modelled)."""
+        if self.openElements[-1].name in base.tableInsertModeElements and self.errorHook:
+            parent, _ = self.getTableMisnestedNodePosition()
+            if (getattr(parent, "kind", None) == "element"
+                    and parent.namespace in (namespaces["svg"], namespaces["mathml"])
+                    and parent.name in FOREIGN_RCDATA_NAMES and parent is not self.openElements[-1]):
+                self.errorHook("step1-element-inserted-into-foreign-rcdata")
+        return base.TreeBuilder.insertElementTable(self, token)
     doctypeClass = DoctypeNode
     fragmentClass = FragNode
 

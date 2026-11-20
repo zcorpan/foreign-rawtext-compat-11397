@@ -23,8 +23,8 @@ plan includes their fixes, and "How we got here" below shows how.
   break out of foreign content, whether or not the start tag is self-closing.
 - Fragment parsing into a foreign `title`, `style`, `script` or `noscript` context element yields text only, SVG `title`
   stops being an HTML integration point, and the tree builder pops a foreign RCDATA element when its end tag ends RCDATA.
-- `template for` patching into those elements keeps text, keeps comments and PIs without `</`, and replaces element
-  children by their text.
+- `template for` patching into those elements keeps text, keeps comments and PIs without `</`, and drops element
+  children.
 - #9426: only a browser whose user or sandbox actually disabled scripting parses with the scripting flag off.
 - #11397's tokenization lands before or with #13100's `contentnamespace`, and #13100 is aligned with it.
 - For stored content and server-side sanitizers: an opt-in serializer mode, and sanitizer rules (reject `script` text
@@ -167,7 +167,7 @@ The same items with the reasons and the evidence behind each.
    `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too, and drops element, comment and PI children of `script`: a nested `script` element's end tag would end an HTML `script` early). The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
 3. Make `template for` patching into an SVG/MathML `title`, `style`, `script` or `noscript` insert the patch's text nodes as
-   they are, its comments and PIs unless their data contains `</`, and each element child as its text content (a comment
+   they are, its comments and PIs unless their data contains `</`, and drops element children (a comment
    nested in an element child would otherwise reach the serialization as markup text). Text in these elements is escaped on
    serialization, and a comment or PI can only end the element through the start of an end tag (comment data with `<`, `x</`
    or `</titlex y` round-trips in mode 4), so patched trees stay as safe as parser-built ones, markers for later patches

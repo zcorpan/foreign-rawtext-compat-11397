@@ -273,6 +273,9 @@ Common Crawl live runs: `out-rcdata-m2`, `out-rcdata-m3`, `out-wix-m1`, `out-raw
 - Assistive technology output.
 - Other engines.
 - Parsers outside browsers, which would need the same change.
+- Fragment parsing into these elements (`innerHTML`, `insertAdjacentHTML`, `setHTML` and streaming on an SVG `style`,
+  `title` or `script`), where markup and comments become text: e.g. `svgStyle.innerHTML = "<!-- .a{} -->"` gives a
+  comment today and active CSS after the change. Only document parsing was measured.
 - Live runs used a desktop viewport on mobile-crawl pages.
 
 ## Query bytes

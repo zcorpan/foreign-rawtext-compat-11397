@@ -21,8 +21,8 @@ plan includes their fixes, and "How we got here" below shows how.
 - [#11397](https://github.com/whatwg/html/issues/11397)'s tokenization: SVG/MathML `title`, `style`, `script` and `noscript` are RCDATA, with comments and PIs kept as
   nodes (the element's end tag still ends them), and `textarea`, `xmp`, `iframe`, `noembed`, `noframes` and `plaintext`
   break out of foreign content, whether or not the start tag is self-closing.
-- Fragment parsing into a foreign `title`, `style`, `script` or `noscript` context element yields text only, SVG `title`
-  stops being an HTML integration point, and the tree builder pops a foreign RCDATA element when its end tag ends RCDATA.
+- Fragment parsing into a foreign `title`, `style`, `script` or `noscript` context element yields text only (CDATA markers
+  are still dropped), and SVG `title` stops being an HTML integration point. Its content model becomes text (step 1).
 - `template for` patching into those elements keeps text, keeps comments and PIs without `</`, and drops element
   children.
 - [#9426](https://github.com/whatwg/html/issues/9426): only a browser whose user or sandbox actually disabled scripting parses with the scripting flag off.
@@ -33,8 +33,8 @@ plan includes their fixes, and "How we got here" below shows how.
 **Evidence.** 23.5M Firefox cases on the implementation of the plan found no violation of a direct invariant check (foreign
 RCDATA elements hold only text, comments and PIs, none containing the start of the element's end tag; fragment parsing into
 one yields only text) in documents and in every fragment context, with the canary oracle showing only the leftovers
-listed under Scope. The same checks flag today's parsing by the hundreds of thousands and the earlier builds of the
-proposal, so a clean result means something. The fuzzing is backed by a catalog of 16 published root-cause classes
+listed under Scope. The canary oracle flags today's parsing by the hundreds of thousands, and the invariant checks
+flagged the earlier builds of the proposal, so a clean result means something. The fuzzing is backed by a catalog of 16 published root-cause classes
 (`literature.md`) and a spec enumeration of every place serialization isn't the inverse of parsing (`enumeration.md`).
 
 **Scope.**
@@ -184,8 +184,9 @@ The same items with the reasons and the evidence behind each.
    Also remove SVG `title` from the HTML integration point list: while it stays one, characters inside it run the "in body"
    rules, reconstruct the active formatting elements, and the title's matching end tag is processed against an HTML current
    node and ignored, leaving the title open after the tokenizer has left RCDATA (found by fuzzing, closed in the Gecko build).
-   As defence in depth, have the tree builder pop a foreign RCDATA element whenever its appropriate end tag ends RCDATA,
-   like the HTML "text" insertion mode does.
+   No extra end tag rule is needed once SVG `title` isn't an integration point: only text, comments and PIs can be inside a
+   foreign RCDATA element, so when its end tag arrives it is the current node, and the existing foreign content end tag
+   rule pops it.
 5. Corner 3: define [#9426](https://github.com/whatwg/html/issues/9426) so only a browser whose user or sandbox actually disabled scripting parses with the flag off,
    and everything else (including `DOMParser`, `createHTMLDocument`, fragment parsing and server-side parsers)
    parses with scripting enabled. Tell sanitizer maintainers to parse with scripting enabled and drop `noscript`,

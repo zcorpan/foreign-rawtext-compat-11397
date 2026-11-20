@@ -90,7 +90,7 @@ def run_one(mode, t):
         signal.alarm(0)
 
 
-COUNT = "max"   # how to count #errors vs #new-errors: max | sum | errors
+COUNT = "sum"   # how to count #errors vs #new-errors: max | sum | errors
 
 
 def judge(t, r):
@@ -125,7 +125,7 @@ def main():
     ap.add_argument("--json")
     ap.add_argument("--quiet-fails", action="store_true",
                     help="only print per-file counts, not failing indices")
-    ap.add_argument("--count", default="max", choices=["max", "sum", "errors"],
+    ap.add_argument("--count", default="sum", choices=["max", "sum", "errors"],
                     help="expected error count: max(#errors,#new-errors) (default; the "
                     "files list the same errors in both), their sum, or #errors only")
     a = ap.parse_args()

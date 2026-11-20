@@ -5,7 +5,7 @@
 (unpatched html5lib), `new` or `both`.
 
     python3 run_dat.py --mode both --quiet-fails <resources dir>     # about 1 minute, one process
-    python3 run_dat.py --mode new --last 34 <dir>/pending-spec-changes.dat
+    python3 run_dat.py --mode new --last 63 <dir>/pending-spec-changes.dat
     python3 run_dat.py --mode new --show pending-spec-changes.dat:3 <dir>/pending-spec-changes.dat
 
 Pass means tree equal and parse-error count equal. `#new-errors` repeats the
@@ -44,11 +44,12 @@ foreign-fragment (fragment-case breakout, 0-2, 18-65), processing-instructions.d
 tests1:39 (`<?`) now has 2 errors (eof-in-processing-instruction) vs 1 expected: PI states
 predate #11397.
 
-## pending-spec-changes.dat, last 34 entries
+## pending-spec-changes.dat, new entries
 
-All 34 pass (tree and error count). An earlier draft of the tests failed 8 on error count only: the input
-ended `<rect></svg>` with `rect` still open, and the foreign-content "any other end tag" rule gives
-`unexpected-end-tag` for `</svg>` then (node `rect`, token `svg`). The tests now use `<rect/>`.
+The 63 new entries (the last 63 in the file) all match on tree. 62 match on error count; the exception is
+`<svg><title>&x</title>`, where html5lib reports a stale `expected-named-entity` error that the spec doesn't have (see
+"Known deviations"). An earlier draft of the tests failed 8 on error count only: the input ended `<rect></svg>` with
+`rect` still open, which gives `unexpected-end-tag` for `</svg>`; the tests now use `<rect/>`.
 
 ## Limitations
 
@@ -89,7 +90,6 @@ with `</name` without the delimiter (the "ends with" clause; the balanced input
 The A-without-B cases carry an ordinary tokenizer error; the tree changes but no `step1-*` error is added:
 - Start tag cut off by EOF inside the element (`<svg><style><l`): new turns the partial tag into text.
 - `</>`, `</` + non-letter (`<svg><title></ `), `<!` (incorrectly-opened-comment), `<?` at EOF.
-- A bogus comment with an invalid-target PI that ends at the `>` of the end tag (`<svg><style><!</Style>`).
 - NUL in an SVG `title` (today an HTML integration point, so in body drops it; new gives U+FFFD).
 - The same constructs in the fragment contexts above.
 
@@ -99,3 +99,21 @@ the CDATA text is the same in both; the error is reported but the tree does not 
 The 6 document cases are `<svg><Title><?</title` at EOF: the bogus comment data ends with `</title` because the input
 ended, and the tree is the same in both. "Ends with" cannot tell EOF from the end tag's `>`, so truncated input is
 over-reported (harmless).
+
+## Known deviations of the reference parser (audit)
+
+These don't change any verdict for the 63 new tree construction tests, but they limit what the differential shows:
+- Character references go through html5lib's `consumeEntity`, which reports an error for `&foo` and `&;` where the spec
+  has none (only `&foo;` is an error). Test entries are checked against the spec, not this.
+- NUL inside a CDATA section is replaced with U+FFFD in the tokenizer; the spec leaves it to tree construction (in body
+  drops it, foreign content replaces it). So `<svg><title><![CDATA[\0]]>` doesn't show up as a changed tree.
+- html5lib still has the "in select" insertion mode, so generated inputs starting with `<select><svg>` never reach foreign
+  content; and html5lib's in body "any other end tag" matches by name only, which affects some old1 trees that already
+  have a step 1 error.
+- Content patching (`template for`) and template contents aren't modelled, so the step 2 patching rules and the step 1
+  errors for patches are checked by reading the spec, not here.
+- The "no other parse error" check accepts any error html5lib reports, including stale ones; the minimized groups above
+  only show errors the spec also has.
+- `#errors` + `#new-errors` is the count per the format's README; run_dat.py's default is now `sum` (the baseline table
+  above shows both rules; the new entries have no `#new-errors`).
+

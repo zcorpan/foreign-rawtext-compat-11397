@@ -28,7 +28,7 @@ plan includes their fixes, and "How we got here" below shows how.
 - [#9426](https://github.com/whatwg/html/issues/9426): only a browser whose user or sandbox actually disabled scripting parses with the scripting flag off.
 - [#11397](https://github.com/whatwg/html/issues/11397)'s tokenization lands before or with [#13100](https://github.com/whatwg/html/issues/13100)'s `contentnamespace`, and [#13100](https://github.com/whatwg/html/issues/13100) is aligned with it.
 - For stored content and server-side sanitizers: an opt-in serializer mode, and sanitizer rules (reject `script` text
-  containing `<!--` or `<script` and drop `script` children that aren't text, parse with scripting enabled, drop `noscript`).
+  containing `<!--` or `<script` (ASCII case-insensitive) and drop `script` children that aren't text, parse with scripting enabled, drop `noscript`).
 
 **Evidence.** 23.5M Firefox cases on the implementation of the plan found no violation of a direct invariant check (foreign
 RCDATA elements hold only text, comments and PIs, none containing the start of the element's end tag; fragment parsing into
@@ -63,7 +63,7 @@ implemented in any build:
 | # | Corner | Introduced by proposal? | Closable in the spec PR? |
 |---|---|---|---|
 | 1 | Self-closing `textarea`, `xmp`, `iframe`, `noembed`, `noframes` or `plaintext` in SVG/MathML stays foreign and empty, but serializes with start and end tags, so on reparse it breaks out and what follows changes namespace. Verified by hand: `<svg><xmp/><rect/></svg>` round-trips today, not under the proposal | yes | yes: break out regardless of the self-closing flag. Compat cost looks nil: the live check of 2,987 candidate pages found no real SVG/MathML element of these six, self-closing or not, except one non-self-closing `iframe` |
-| 2 | HTML `script` text (script data double-escape, or `<?`/bogus-comment prefix) vs foreign RCDATA `script`: one text node in HTML, split at the first end tag after a namespace pivot. Needs a sanitizer that keeps `script`. Also appears in the RCDATA-only modes | yes | accepted as an exception (decided): closing it would need script data states with character references, which makes `<!--` text in SVG scripts, or about 10 or more new states for comment nodes that track the double-escape state. Sanitizers that keep `script` must reject text containing `<!--` or `<script`, and drop its element, comment and PI children |
+| 2 | HTML `script` text (script data double-escape, or `<?`/bogus-comment prefix) vs foreign RCDATA `script`: one text node in HTML, split at the first end tag after a namespace pivot. Needs a sanitizer that keeps `script`. Also appears in the RCDATA-only modes | yes | accepted as an exception (decided): closing it would need script data states with character references, which makes `<!--` text in SVG scripts, or about 10 or more new states for comment nodes that track the double-escape state. Sanitizers that keep `script` must reject text containing `<!--` or `<script` (ASCII case-insensitive), and drop its element, comment and PI children |
 | 3 | HTML `noscript` parsed with scripting off (markup children) vs foreign `noscript` (RCDATA always), after a namespace pivot | partly: [#9426](https://github.com/whatwg/html/issues/9426) fixes it inside one browser; server-side libraries that default to scripting off still differ | depends on [#9426](https://github.com/whatwg/html/issues/9426)'s final text |
 
 Also found by reading the spec (the Firefox build has no PIs, `template for` or declarative shadow DOM; the patching
@@ -164,7 +164,7 @@ The same items with the reasons and the evidence behind each.
 
 1. Break out the six elements regardless of the self-closing flag (corner 1).
 2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing
-   `<!--` or `<script`, and drop element, comment and PI children of `script` (a nested `script` element's end tag would end an HTML `script` early), even when the config allows `script`; the opt-in serializer mode does both. The
+   `<!--` or `<script` (ASCII case-insensitive), and drop element, comment and PI children of `script` (a nested `script` element's end tag would end an HTML `script` early), even when the config allows `script`; the opt-in serializer mode does both. The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
 3. Make `template for` patching into an SVG/MathML `title`, `style`, `script` or `noscript` insert the patch's text nodes as
    they are, its comments and PIs unless their data contains `</`, and drops element children (a comment

@@ -148,7 +148,7 @@ In review images, today is on the left.
   - The remaining boundary difference, HTML `<script><!--<script></script>…`, is an accepted
     exception: it needs a sanitizer that keeps `script` (any type: a data block's text is still
     script data text). Sanitizers that keep `script` should reject its text when it contains
-    `<!--` or `<script`, and drop its element, comment and PI children (a nested `script` ends an
+    `<!--` or `<script` (ASCII case-insensitive), and drop its element, comment and PI children (a nested `script` ends an
     HTML `script` early when serialized). Keeping comments as nodes rules out the other options: matching the
     HTML extents would need script data states with character references, which makes `<!--` text
     (about 3 pages in the HTTP Archive full parses have a comment in an SVG script, inert today),
@@ -202,7 +202,7 @@ What a sanitizer, or the pipeline around it, needs so stored content isn't affec
 - Don't allow raw text and RCDATA elements whose end tag can appear in their text, in any
   namespace, unless their text is checked for markup (DOMPurify's literal-text guard does this).
 - If `script` is kept at all (including data blocks with a non-JS type), drop or reject any whose
-  text contains `<!--` or `<script`, even when the config allows `script`: the HTML script data
+  text contains `<!--` or `<script` (ASCII case-insensitive), even when the config allows `script`: the HTML script data
   states let those hide the element's end tag, and foreign `script` ends at the first one. Also
   drop element, comment and PI children of a `script` (they don't affect execution). A nested
   `script` element serializes with its own end tag, which ends an HTML `script` early and turns the

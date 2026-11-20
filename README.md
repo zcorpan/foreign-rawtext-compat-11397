@@ -59,7 +59,7 @@ In review images, today is on the left.
   SVG `<script>` containing `&amp;&amp;` (SyntaxError on 2 Common Crawl pages).
 - **Comments and tags become text (rcdata, rcdata-dc)**:
   - React's `<!-- -->` text separators in SVG `<title>`/`<style>` give React hydration errors
-    (#418/#423/#425, client-side recovery) on ~58 pages (CI 16–143) in both modes.
+    ([cure53/DOMPurify#418](https://github.com/cure53/DOMPurify/issues/418)/[#423](https://github.com/cure53/DOMPurify/issues/423)/[#425](https://github.com/cure53/DOMPurify/issues/425), client-side recovery) on ~58 pages (CI 16–143) in both modes.
   - The same applies to Angular/Lit markers and kbb.com's `<!--t.…-->`, which duplicated titles
     live.
   - Translation-widget elements (`<ly-as-N>`), `<span>`/`<br>` in titles, `<tspan>` in `<style>`.

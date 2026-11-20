@@ -28,7 +28,7 @@ plan includes their fixes, and "How we got here" below shows how.
 - [#9426](https://github.com/whatwg/html/issues/9426): only a browser whose user or sandbox actually disabled scripting parses with the scripting flag off.
 - [#11397](https://github.com/whatwg/html/issues/11397)'s tokenization lands before or with [#13100](https://github.com/whatwg/html/issues/13100)'s `contentnamespace`, and [#13100](https://github.com/whatwg/html/issues/13100) is aligned with it.
 - For stored content and server-side sanitizers: an opt-in serializer mode, and sanitizer rules (reject `script` text
-  containing `<!--` or `<script`, parse with scripting enabled, drop `noscript`).
+  containing `<!--` or `<script` and drop `script` children that aren't text, parse with scripting enabled, drop `noscript`).
 
 **Evidence.** 23.5M Firefox cases on the implementation of the plan found no violation of a direct invariant check (foreign
 RCDATA elements hold only text, comments and PIs, none containing the start of the element's end tag; fragment parsing into
@@ -164,7 +164,7 @@ The same items with the reasons and the evidence behind each.
 
 1. Break out the six elements regardless of the self-closing flag (corner 1).
 2. Corner 2: document it as an exception, and have the outreach tell sanitizers to reject `script` text containing
-   `<!--` or `<script` even when the config allows `script` (the opt-in serializer mode omits such text too, and drops element, comment and PI children of `script`: a nested `script` element's end tag would end an HTML `script` early). The
+   `<!--` or `<script`, and drop element, comment and PI children of `script` (a nested `script` element's end tag would end an HTML `script` early), even when the config allows `script`; the opt-in serializer mode does both. The
    Sanitizer API's safe methods remove `script` regardless of the config, so they need no change.
 3. Make `template for` patching into an SVG/MathML `title`, `style`, `script` or `noscript` insert the patch's text nodes as
    they are, its comments and PIs unless their data contains `</`, and drops element children (a comment

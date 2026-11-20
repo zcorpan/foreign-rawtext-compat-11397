@@ -2,7 +2,7 @@
 
 Question: with [#11397](https://github.com/whatwg/html/issues/11397) (breakout for `textarea`, `xmp`, `iframe`, `noembed`, `noframes`, `plaintext`;
 RCDATA for SVG/MathML `title`, `style`, `script`, `noscript`), [#6362](https://github.com/whatwg/html/issues/6362) (`<`/`>` escaped in
-attributes) and [#9426](https://github.com/whatwg/html/issues/9426) (one scripting flag), is HTML parse, serialize, parse mXSS closed? This
+attributes) and [#9426](https://github.com/whatwg/html/issues/9426) (one scripting flag), is HTML parse, serialize, parse mXSS closed for trees the parser builds? This
 fuzzer looks for counterexamples and, on baseline engines, checks that it can rediscover the known
 classes (`mxss/literature.md`, M1 to M16). XML and XHTML are out of scope.
 
@@ -69,8 +69,8 @@ Canaries carry unique ids (`X7Q<n>`) and are `img onerror`, `svg onload`, `body 
    (T2 context is SVG/MathML), `wrap` (sink wrapper), `rawctx` (T1 context is a raw or
    foreign-raw element), `dom` (DOM-built tree).
    Only `same`/`toHtml`/`toForeign` with parser-made T1 trees speak to the proposal directly;
-   `wrap`, `rawctx` and `dom` are known not to be closed by it (M6, M9 and
-   enumeration rows 19 to 23).
+   `wrap`, `rawctx` and `dom` are out of scope for it (M6, M9 and
+   enumeration rows 19 to 23): not parse-serialize-parse mismatches of parser output.
 6. Non-security statistic: T2 parsed in T1's context with a different element name multiset,
    grouped by the changed names.
 
@@ -115,7 +115,7 @@ range is skipped.
 - Parser differentials between engines or against server-side parsers are out of scope: all parses
   are in one engine. Old engines and non-conformant serializers are not modelled.
 - Nodes the parser cannot produce are covered only by the small DOM-built generator, and
-  those cases are not closed by the proposal anyway.
+  those cases are out of scope for the proposal anyway.
 - No `template for`, declarative shadow DOM or HTML PI parsing in the Firefox build; `selectedcontent`
   re-cloning is not modelled; no `document.write` or sanitize-while-parsing.
 - Contexts: 8 of 30+ T2 contexts per case; T1 contexts are fewer. Cases with `noscript`

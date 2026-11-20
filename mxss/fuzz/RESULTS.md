@@ -6,10 +6,15 @@ canary didn't survive serialization. Scripting flag emulated as in README.md.
 
 ## Summary
 
+- Final state, Firefox mode 5c (the implementation of the plan): 0 violations of the direct invariants (I1, I1f, I2, I3) in about 23,500,000
+  cases, in documents and every fragment context. The canary oracle shows only HTML `script` text vs foreign `script` (accepted exception),
+  HTML `noscript` across scripting flags (depends on #9426), and the out-of-scope classes (sink wrappers, DOM-built trees, raw
+  fragment contexts, sink-context insertion modes, an `image`/`img` identity flip). The sections below are in the order the findings
+  came, from mode 4 to 5c.
 - Mode 4 (the full proposal) with [#6362](https://github.com/whatwg/html/issues/6362): no finding in the parser-produced HTML-to-HTML space that involves
   text, comment, PI or attribute carriers and a namespace pivot (M1 to M4 classes), in 12,000,000 from-scratch
   cases, 2,000,000 seeded, 3,000,000 targeted. Two other mechanisms still work (below), plus the known
-  not-addressed ones (sink wrappers M6, DOM-built trees M9, fragment parsing into raw or foreign-raw context
+  out-of-scope ones (sink wrappers M6, DOM-built trees M9, fragment parsing into raw or foreign-raw context
   elements, scripting-flag differential M5).
 - Baseline Firefox (mode 0) and Chrome Canary rediscover M1, M3/M7-style comment carriers via structure, M4 (comment/PI
   holds the end tag in foreign `title`/`style`/`script`/...), M6, M9 from scratch. M2/M3 attribute carriers
@@ -18,7 +23,7 @@ canary didn't survive serialization. Scripting flag emulated as in README.md.
   what a same-engine canary oracle can express (sanitizer-side parser bugs M15, historic engine bugs M12 to M14,
   DOM-created nodes M9, parse-time cloning M10, structural-only seeds M7/M11 without a canary).
 
-## What still works under mode 4 (class level)
+## What still worked under mode 4 (class level; history, see mode 5c for the final state)
 
 1. Self-closed breakout element. In SVG/MathML, `textarea`, `xmp`, `iframe`, `noembed`, `noframes` or `plaintext`
    written self-closing keep today's behavior (stay foreign, empty). The serializer always writes start and end
@@ -38,7 +43,7 @@ canary didn't survive serialization. Scripting flag emulated as in README.md.
    makes the `noscript` foreign on reparse. Seen in mode 4 seeded runs (2 signatures, 26 cases) in DOMParser documents
    both sides, and in the self-closed runs (3 cases).
 
-Not closed by design, seen in every mode: sink wrappers (M6), DOM-built trees (M9, foreign RCDATA/raw elements with
+Out of scope (not parse-serialize-parse mismatches of parser output), seen in every mode: sink wrappers (M6), DOM-built trees (M9, foreign RCDATA/raw elements with
 comment/PI/element children, row 21), fragment parsing with a raw or foreign-raw context element (rows 19/22), the scripting-flag
 differential when the restriction is lifted (M5, `noscriptmix` runs).
 
@@ -147,7 +152,7 @@ breaking out of foreign content even when self-closing (commit 58df02c3). `--bat
 Cases: scratch 12,000,000, seeded 2,100,000, noscriptmix 400,000, targeted self-closing 3,000,000, plus the 31 calibration seeds.
 Mode 4 had 12,000,000 / 2,000,000 / 400,000 / 3,000,000 under the same configurations (mode 4's batch size was 100,000).
 
-- Corner 1 (self-closed breakout element) is gone: the targeted self-closing run has 0 findings outside the not-closed-by-design classes
+- Corner 1 (self-closed breakout element) is gone: the targeted self-closing run has 0 findings outside the out-of-scope classes
   (mode 4: 82 cases in 9 signatures), and scratch has 0 (mode 4: 1). `same`, `toHtml` and `toForeign` classes are empty in that run.
 - Calibration: mode 5 flags 4/31 seeds, the same ones as modes 2 to 4 (M5 and M6).
 - `plaintext` serialization (writes `</plaintext>`, reparses as text) produces no finding on its own: no `plaintext` signature appears
@@ -257,4 +262,4 @@ Summary of modes 4 to 5c (Firefox builds of the proposal; canary oracle, from-sc
   HTML integration point), the tree builder ignored the title's end tag, a following comment holding the end tag became a child of the title (27 cases in 12,000,000).
 - Mode 5b (SVG `title` no longer an HTML integration point): desync fixed (I1 flagged the old binary in 3,490 cases of 3,000,000 targeted, the fixed one never). New invariant oracle found
   I2 violations with a foreign RCDATA fragment context element (comment child holding the end tag).
-- Mode 5c (foreign RCDATA context elements parse as text): 0 invariant violations in 23,500,000 cases. Remaining canary classes are corner 2, corner 3 and the not-closed-by-design classes.
+- Mode 5c (foreign RCDATA context elements parse as text): 0 invariant violations in 23,500,000 cases. Remaining canary classes are corner 2, corner 3 and the out-of-scope classes.

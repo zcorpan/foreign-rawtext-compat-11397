@@ -6,11 +6,12 @@ kept separately (untracked) in `mxss/private/seeds.jsonl`.
 Question: is [whatwg/html#11397](https://github.com/whatwg/html/issues/11397) (plus [whatwg/html#6362](https://github.com/whatwg/html/issues/6362), merged; plus [whatwg/html#9426](https://github.com/whatwg/html/issues/9426), assumed
 fixed) the last known root cause of HTML-to-HTML parse, serialize, parse mXSS?
 
-Short answer: it plausibly closes the last known *tokenization-driven* class for trees the HTML
-parser itself produces, in updated browsers, when sanitizing and sinking happen in the same
-engine with the same context. It is not the last root cause of mXSS in general: sink-context
-mismatch, DOM-created nodes, parse-time DOM generation, and non-conformant sanitizer parsers and
-serializers remain, and none of them is touched by the three changes. Details below.
+Short answer: plausibly yes, for what the question asks: parse-serialize-parse mismatches in trees the HTML parser
+itself produces, in updated browsers, sanitizing and sinking in the same engine with the same context. It closes the last
+known tokenization-driven class of those (with the two accepted exceptions in `README.md`). The cases below that it doesn't
+touch aren't parse-serialize-parse mismatches of parser output, so they're out of scope: sink-context mismatch (the output is
+inserted into a different context than it was parsed for), DOM-created nodes, parse-time DOM generation, and non-conformant
+sanitizer parsers and serializers. They're listed for completeness, not as open gaps in the proposal. Details below.
 
 ## Terms
 

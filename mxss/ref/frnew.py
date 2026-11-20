@@ -417,6 +417,18 @@ class NewTokenizer(_tokenizer.HTMLTokenizer):
             self.state = self.bogusCommentState
         return True
 
+    def bogusDoctypeState(self):
+        c = self.stream.char()
+        if c == ">":
+            self.state = self.returnState
+            self.tokenQueue.append(self.currentToken)
+        elif c is EOF:
+            self.tokenQueue.append(self.currentToken)
+            return self.eof()
+        elif c == "\u0000":
+            self.err("unexpected-null-character")
+        return True
+
     # -- bogus comment, markup declaration open
     def bogusCommentState(self):
         c = self.stream.char()
@@ -440,12 +452,15 @@ class NewTokenizer(_tokenizer.HTMLTokenizer):
             self.newComment()
             self.state = self.commentStartState
         elif (len(s) == 7 and s.translate(LOWER) == "doctype"
-              and self.returnState != self.foreignRcdataState):
+              ):
             self.consume(7)
             self.currentToken = {"type": TT["Doctype"], "name": "",
                                  "publicId": None, "systemId": None,
                                  "correct": True}
-            self.state = self.doctypeState
+            if self.returnState == self.foreignRcdataState:
+                self.state = self.bogusDoctypeState
+            else:
+                self.state = self.doctypeState
         elif s == "[CDATA[" and (
                 self.foreignCdataAllowed()):
             self.consume(7)

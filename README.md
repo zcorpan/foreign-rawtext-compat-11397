@@ -284,3 +284,7 @@ clients) 11.2 GB; `queries/breakout-candidates.sql` (restored candidate table) 0
 ## Reproduce
 
 This run was done with the [`httparchive` skill](https://github.com/zcorpan/web-platform-skills/blob/main/docs/httparchive.md). The steps above are standalone and rerun the same analysis without the skill.
+
+## License
+
+MIT, see [LICENSE](LICENSE), for the scripts, analysis and text written for this research. Content from the crawl and the live web (`queries/`, `crawl/`, screenshots, page snippets) and third-party code (`vendor/`) belongs to its owners and isn't covered.

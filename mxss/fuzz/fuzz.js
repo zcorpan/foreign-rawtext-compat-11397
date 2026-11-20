@@ -355,6 +355,7 @@ function genSelfClose(rng) {
 function genTargeted(rng, force) {
   if (force === 'selfclose') return genSelfClose(rng);
   if (force === 'desync') return genDesync(rng);
+  if (force === 'frag') return genFrag(rng);
   const out = []; const raw = R(rng, RAW);
   const k = rng();
   if (!force && k > 0.9) return genSelfClose(rng);
@@ -489,6 +490,28 @@ function genDesync(rng) {
 }
 const DESYNC_T1 = ['s:svg', 'm:math', 's:g', 'm:mrow', 's:foreignObject', 's:desc', 'm:mtext', 'm:annotation-xml;text/html', 'doc', 'doc', 'h:div', 'h:template', 'h:td', 'h:select', 's:title', 'm:mi'];
 
+
+// ---------- fragment-context generator: constructs aimed at context elements (T1 and T2) ----------
+const FRAG_CTX = ['s:title', 's:style', 's:script', 's:noscript', 'm:title', 'm:style', 'm:script', 'm:noscript', 's:foreignObject', 's:desc', 'm:mtext', 'm:annotation-xml;text/html', 'm:annotation-xml', 'h:template', 'h:select', 'h:table', 'h:tbody', 'h:tr', 'h:td', 'h:colgroup', 'h:textarea', 'h:xmp', 'h:iframe', 'h:noembed', 'h:noframes', 'h:plaintext', 'h:title', 'h:style', 'h:script', 'h:noscript', 's:textarea', 's:xmp', 's:iframe', 's:noembed', 's:noframes', 's:plaintext', 'h:div', 'doc', 's:svg', 'm:math', 'h:head', 'h:frameset'];
+function genFrag(rng) {
+  const out = [];
+  const n = 2 + Math.floor(rng() * 5);
+  for (let i = 0; i < n; i++) {
+    const nm = R(rng, RAW), r = rng();
+    const closer = '</' + caseVar(rng, nm) + R(rng, ['>', ' >', '/>', ' x>', '']);
+    if (r < 0.14) out.push(R(rng, CMT_START), closer, chance(rng, 0.6) ? payload(rng) : '', chance(rng, 0.7) ? R(rng, CMT_END) : '');
+    else if (r < 0.26) out.push(R(rng, ['<?x ', '<?', '<?php ', '<?xml ']), closer, chance(rng, 0.6) ? payload(rng) : '', R(rng, ['?>', '>', '']));
+    else if (r < 0.36) out.push(R(rng, ['<!', '<!x ', '</', '</3 ', '<![if ']), closer, payload(rng), '>');
+    else if (r < 0.46) out.push('<![CDATA[', chance(rng, 0.6) ? closer : 'x', chance(rng, 0.5) ? payload(rng) : '', chance(rng, 0.7) ? ']]>' : '');
+    else if (r < 0.58) out.push(closer, chance(rng, 0.7) ? payload(rng) : 'x');
+    else if (r < 0.66) out.push(R(rng, CHARREFS), R(rng, ['x', '&lt;/' + nm + '&gt;', '&#60;/' + nm + '&#62;']), payload(rng));
+    else if (r < 0.82) out.push(startTag(rng, R(rng, [nm, pickName(rng), 'b', 'a', 'table', 'select', 'template'])), chance(rng, 0.5) ? closer : 'x');
+    else if (r < 0.9) out.push(R(rng, PIVOTS));
+    else out.push('<' + caseVar(rng, nm) + '>', 'text', R(rng, CMT_START), closer, payload(rng));
+  }
+  return out;
+}
+
 const DOMRAW = ['title', 'style', 'script', 'noscript', 'textarea', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext', 'svg', 'math', 'div'];
 function genDom(rng) {
   const ns = R(rng, ['h', 's', 'm']), name = R(rng, DOMRAW), kids = [];
@@ -533,8 +556,9 @@ function invariants(root, tag, out) {
         const ln = n.localName.toLowerCase();
         if (INV_BRK.has(ln) && n !== root) out.add(tag + '|I3:' + k + ':' + ln);
         if (INV_RC.has(ln)) {
-          const re = new RegExp('</' + ln + '[\\s/>]', 'i');
+          const re = new RegExp('</' + ln + '[\\t\\n\\f\\r />]', 'i');
           for (let c = n.firstChild; c; c = c.nextSibling) {
+            if (n === root && c.nodeType !== 3) out.add(tag + '|I1f:' + k + ':' + ln + ':' + (c.nodeType === 1 ? 'element' : c.nodeType === 8 ? 'comment' : 'pi'));
             if (c.nodeType === 1) out.add(tag + '|I1:' + k + ':' + ln + ':element');
             else if ((c.nodeType === 8 || c.nodeType === 7) && re.test(c.data)) out.add(tag + '|I2:' + k + ':' + ln + ':' + (c.nodeType === 8 ? 'comment' : 'pi'));
           }
@@ -695,9 +719,10 @@ function genSpec(rng, cfg) {
   if (kind !== 'grammar' && chance(rng, 0.5) && !toks.some(t => t.includes(MARK))) ensurePayload(rng, toks);
   if (kind === 'grammar' || kind === 'target' || kind === 'pitf') ensurePayload(rng, toks);
   { let k = 0; toks = toks.map(t => t.replace(/X7Q\d*/g, () => MARK + (k++))); }
-  const spec = {tokens: toks, t1: (cfg.tk === 'desync' && chance(rng, 0.8)) ? R(rng, DESYNC_T1) : R(rng, cfg.t1), t2: cfg.t2, kind, ser: cfg.ser};
-  if (cfg.t2sample && cfg.t2.length > cfg.t2sample) {
-    const pool = cfg.t2.filter(c => c !== spec.t1), pick = [];
+  const spec = {tokens: toks, t1: cfg.tk === 'frag' ? R(rng, FRAG_CTX) : (cfg.tk === 'desync' && chance(rng, 0.8)) ? R(rng, DESYNC_T1) : R(rng, cfg.t1), t2: cfg.t2, kind, ser: cfg.ser};
+  const t2src = cfg.tk === 'frag' ? FRAG_CTX.concat(WRAP.map(w => 'w:' + w)) : cfg.t2;
+  if (cfg.t2sample && t2src.length > cfg.t2sample) {
+    const pool = t2src.filter(c => c !== spec.t1), pick = [];
     while (pick.length < cfg.t2sample - 1 && pool.length) pick.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
     spec.t2 = pick.concat([spec.t1]);
   }

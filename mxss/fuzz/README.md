@@ -21,7 +21,7 @@ cause was not confirmed, but the numbers match). Before running it for hours:
   leaked a browser each time a worker restarted after a crash or hang; the current driver reaps them.
 
 Firefox mode 5 build, 3 workers at `--batch 10000`: summed RSS of all Nightly processes peaked at about 26 GB
-(same caveats; roughly 8-9 GB per worker, so keep to 3 workers on a 48 GB machine).
+(same caveats; roughly 8-9 GB per worker, so keep to 3 workers on a 48 GB machine). The fixed mode 5 builds peaked at about 24.6 GB (5b) and 27.5 GB (5c).
 
 Chrome Canary 160 (headless, 3 workers, `--batch 10000`): summed RSS of all Canary processes peaked at about
 9.4 GB (about 3 GB per worker; the sum double-counts shared pages and includes any other Canary on the machine).
@@ -150,3 +150,29 @@ context (`piRT`, with causes), patched/unpatched counts, and an ablation (`ablat
 and re-evaluates each minimized finding to see whether PI parsing or patching is necessary. `tfclass.py` summarizes marker parents and
 patched node kinds. `pi_roundtrip.py` runs a fixed table of PI shapes in 16 containers. `cfg.noPitf` removes `<?` tokens and `template for`
 from every generator (baseline).
+
+## Direct invariants (I1 to I3)
+
+Besides the round-trip canary oracle, every parse (T1 and each T2, any context, including fragment parsing into any context
+element) is checked directly, without serializing:
+- I1: a foreign (SVG/MathML) `title`, `style`, `script` or `noscript` has only text, comment and PI children. I1f (fragment case): after
+  parsing into such a context element, its children are only text.
+- I2: no comment or PI child of such an element has data containing `</` + the element's name (ASCII case-insensitive) followed by
+  ASCII whitespace (tab, LF, FF, CR, space), `/` or `>` (not JS `\s`: NBSP and BOM are not HTML whitespace; an early version used `\s` and
+  flagged 6 false positives).
+- I3: no foreign `textarea`, `xmp`, `iframe`, `noembed`, `noframes` or `plaintext` element exists (the context element itself is exempt).
+Violations are counted per key `T1@ctx|I..:ns:name:kind` / `T2@ctx|...` in the batch stats (`inv`) and the first case per key is minimized
+(`sig` starts with `inv:`; log entries have `invKind`). DOM-built cases are not checked. Not observable from the DOM, so not
+recorded: a foreign RCDATA element still open at EOF while the tokenizer is back in the data state.
+Calibration (`private/invcal.py`, payload-free probes): the invariant oracle flags the old mode 4/5 binary on the desync repro (I1) and
+mode 4 on a self-closing foreign `xmp` (I3); mode 0 violates I1 to I3 on foreign title/textarea/xmp/plaintext/comment cases (detection power
+only); the fixed mode 5 binary passes all of them.
+
+Desync generator (`cfg.tk = "desync"`, also 18% of the default targeted generator): formatting elements and adoption agency / foster parenting /
+table, select and template shapes left open, closers, integration points, then a foreign `title`/`style`/`script`/`noscript`
+(also `textarea`/`xmp`), its end tag, and comments, PIs, CDATA and bogus comments holding that end tag; T1 contexts include
+`svg`, `math`, `g`, `mrow`, `foreignObject`, `desc`, `mtext`, `annotation-xml` and documents.
+
+Fragment-context generator (`cfg.tk = "frag"`): T1 and T2 contexts from a list of 41 context elements (foreign and HTML title/style/script/noscript, textarea,
+xmp, iframe, noembed, noframes, plaintext, foreignObject, desc, mtext, annotation-xml, template, select, table family, colgroup, head, frameset, ...), content
+made of comments (also unclosed), PIs, bogus comments, CDATA markers, end tags of raw/RCDATA names, character references, nested and unclosed constructs.

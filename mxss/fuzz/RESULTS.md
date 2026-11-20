@@ -178,3 +178,87 @@ the markup after it is live (`toHtml`, `toForeign`, different T2 contexts, all w
 and Chrome (formatting element and comment inside a foreign title), where it is harmless because foreign title is markup. A mode 4 binary isn't available any more,
 and the 12M mode-4 scratch run didn't produce it, so whether mode 4 shows it is unconfirmed (it shares the tree builder). Likely an implementation or spec gap (the
 tree builder must close the element when the tokenizer's appropriate end tag ends RCDATA); I didn't test other elements (`style`, `script`, `noscript`) separately.
+
+## Mode 5 fixed build (SVG `title` no longer an HTML integration point) with invariant oracle
+
+What the desync was (class level): in fragment parsing with an SVG or MathML context element, SVG `title` was still an HTML integration point in the tree
+builder. Characters inside it reconstructed the active formatting elements, so an HTML element ended up inside the foreign RCDATA `title`, and the title's
+end tag, already consumed by the tokenizer, was ignored by the tree builder (no HTML element of that name on the stack). The title stayed open with the
+tokenizer back in the data state, so a following comment or bogus comment containing the end tag became a child of the title.
+
+Runs on the fixed binary (commit d18f3ac3, mode 5, `--batch 10000`, 3 workers): scratch 12,000,000, seeded 2,100,000, noscriptmix 400,000,
+targeted self-closing 3,000,000, targeted desync 3,000,000. The old mode 5 binary was run on the desync generator too (3,000,000).
+
+Invariant oracle (I1 to I3, see README.md):
+- Fixed binary: 0 violations of I1 and I3 in any run, in documents and in fragment contexts other than foreign raw ones (svg, g, math, mrow,
+  foreignObject, desc, mtext, annotation-xml, div, template, td, select, table...). I2 is violated only when the fragment context element is itself a
+  foreign `title`, `style`, `script` or `noscript` (`svgTitle.innerHTML = ...`): the context element's comment child can hold the end tag.
+  That is row 22 (fragment parsing with a foreign raw context element; the fragment parser setup is not applied to foreign context
+  elements in this build, and the spec text is HTML-only); it is the fragment-context class already seen, but now stated as an invariant violation.
+  Cases (T1 or T2 context a foreign raw element): scratch 274,153, seeded 111,891, self-closing 39,970, noscriptmix 24,739, desync 207,765.
+- Old mode 5 binary, desync run: I1 violations in 3,490 cases (SVG `title` with an element child in svg, `g`, textarea and xmp contexts) plus
+  the same fragment-context I2 cases (221,580). The fixed binary has none of the I1 cases.
+
+Canary oracle on the fixed binary vs old mode 5 (cases, signatures):
+
+| class | fixed scratch | fixed seeded | fixed self-closing | fixed noscriptmix | fixed desync | old desync |
+|---|---|---|---|---|---|---|
+| corner 1 (self-closed breakout) | 0 | 0 | 0 | 0 | 0 | 0 |
+| title desync (comment holding end tag inside foreign title) | 0 | 0 | 0 | 0 | 0 | not separated from unclassified (165 cases, 32 signatures); I1 shows it |
+| corner 2 (HTML script text vs foreign script; `<!`, `<?`, double escape) | 1,598 (28) | 1,201 (35) | 1 (1) | 399 (7) | 448 (9) | 325 (6) |
+| corner 3 (HTML noscript, scripting off, vs foreign noscript; pivots, also under `desc`) | in 34 (3) unclassified | in 3 (2) | 0 | in 36 (9) | in 6 (4) | in 165 (32) |
+| DOM-built (M9) | 216,908 (298) | 37,954 (278) | 54,258 (283) | 7,279 (233) | 54,258 (283) | 54,258 (283) |
+| sink wrappers (M6) | 50,318 (484) | 16,089 (384) | 127,283 (278) | 6,639 (234) | 20,856 (296) | 24,109 (295) |
+| fragment context into raw or foreign-raw element | 185,464 (238) | 38,871 (184) | 35,367 (127) | 10,734 (104) | 20,840 (102) | 21,852 (114) |
+
+Remaining unclassified fixed-binary signatures, all single-digit case counts: noscript/script corners above; one `image` element-identity flip
+(MathML `image` with an `onerror` attribute inside an `annotation-xml` HTML context becomes `img` when reparsed in HTML; not a text carrier); and one
+insertion-mode case (HTML `plaintext` text reparsed in a `template` context whose first element `col` switches the insertion mode, so the raw start tag is
+ignored: enumeration rows 7/8, a sink-context mismatch). Calibration seeds: 4/31 flagged (M5, M6), unchanged.
+
+## Mode 5c (fragment contexts that are foreign RCDATA elements parse as text) and summary of modes 4 to 5c
+
+Mode 5c binary: commit 5873e678. With a foreign `title`/`style`/`script`/`noscript` context element the fragment parser now sets RCDATA and recognizes no
+comments, PIs or bogus comments. `--batch 10000`, 3 workers (peak summed RSS about 27.5 GB). Canary oracle and invariant oracle (I1, I1f, I2, I3) in every run.
+
+Cases: scratch 12,000,000, seeded 2,100,000, noscriptmix 400,000, targeted self-closing 3,000,000, targeted desync 3,000,000, new targeted fragment-context
+generator 3,000,000. 31 calibration seeds: 4/31 flagged (M5, M6).
+
+Invariants: 0 violations of I1, I1f, I2 and I3 anywhere (every context, T1 and T2, documents and fragments). The context-element I2 violations of 5b are gone (calibration probes show
+5b violating and 5c passing). A first run of the fragment generator reported 6 I2 violations; all were false positives of the oracle (U+00A0 and U+FEFF after the end tag
+name counted as whitespace by JS `\s`, but they are not HTML whitespace, so the tokenizer doesn't end the element); fixed to ASCII whitespace, rerun: 0.
+
+Canary oracle, 5c (cases, signatures) compared with 5b:
+
+| class | 5c scratch | 5c seeded | 5c noscriptmix | 5c desync | 5c frag | 5b scratch |
+|---|---|---|---|---|---|---|
+| corner 1, title desync, foreign RCDATA context violations | 0 | 0 | 0 | 0 | 0 | desync 0, fragment-context I2 274,153 |
+| corner 2 (HTML script text vs foreign script) | 1,384 (10) | 771 (15) | 228 (6) | 344 (12) | 84 (4) | 1,598 (28) |
+| corner 3 (HTML noscript, scripting off) | within the unclassified 1 | within 437 (23) | within 37 (12) | within 5 (1) | 0 | within 34 (3) |
+| DOM-built (M9) | 216,903 (298) | 37,954 (278) | 7,279 (233) | 54,258 (283) | 54,258 (283) | 216,908 (298) |
+| sink wrappers (M6) | 48,720 (459) | 13,165 (381) | 6,151 (225) | 19,130 (274) | 13,978 (218) | 50,318 (484) |
+| fragment context into raw/foreign-raw element, and HTML raw contexts | 166,008 (189) | 33,039 (135) | 8,345 (80) | 13,009 (65) | 236,412 (178) | 185,464 (238) |
+| raw start tag ignored by the T2 `colgroup` context (see below) | 0 | 0 | 0 | 0 | 279 (9) | 0 |
+
+Nothing new beyond the known classes. The raw-start-tag-ignored signatures appear only because the new generator uses a `colgroup` context in T2.
+
+The two stray signatures, reduced (payload-free probes):
+- `image` to `img`: any SVG or MathML fragment context (`svgEl.innerHTML`, `mathEl.innerHTML`, annotation-xml) keeps a foreign `image` element; serialized as
+  `<image ...></image>` and reparsed in an HTML context (div sink, or after the foreign wrapper is unwrapped) it becomes an HTML `img`. Foreign `image` with
+  an event-handler attribute is the carrier. Known class: element-identity flip with a sink-context mismatch (M6) or removal of the foreign wrapper (M8). Not related to
+  the proposal; a sanitizer that drops event handlers is unaffected. Nothing to fix in the proposal. (Per the spec's "start tag token had an `encoding` attribute"
+  wording, a context `annotation-xml` is never an HTML integration point, so even `encoding=text/html` contexts keep `image` foreign.)
+- raw start tag ignored by a context's insertion mode (enumeration rows 7/8, M6): an HTML raw element (`plaintext`, `xmp`, `style`, `script`, `iframe`, `noembed`, `noframes`) whose
+  text contains markup, serialized and reparsed with a `colgroup` or a `template` context where the first element (`col`) switches the insertion mode. The start tag is
+  ignored (only `template` survives in column group), so the raw text becomes markup (`template` contents are live to a sanitizer walking `content`). With the breakout,
+  `<col><plaintext>...` in a MathML fragment context gives a foreign `col` plus an HTML `plaintext`, so the serialization starts with `<col>` and triggers it
+  in a template context. Known sink-context class; the proposal doesn't change it, and it is not something to fix in the proposal.
+
+Summary of modes 4 to 5c (Firefox builds of the proposal; canary oracle, from-scratch 12,000,000 cases each):
+- Mode 4: no M1 to M4 class (text, comment, PI or attribute carriers via namespace pivot). Residuals: corner 1 (self-closing breakout element reparsed as breakout, 82 cases in 3,000,000
+  targeted), corner 2 (HTML script text vs foreign script), corner 3 (HTML noscript with scripting off vs foreign noscript), plus the by-design classes (M6, M9, fragment contexts).
+- Mode 5 (self-closing breakout): corner 1 fixed (0 in 3,000,000 targeted). Found the title desync: a formatting element reconstructed inside foreign `title` (SVG `title` still treated as an
+  HTML integration point), the tree builder ignored the title's end tag, a following comment holding the end tag became a child of the title (27 cases in 12,000,000).
+- Mode 5b (SVG `title` no longer an HTML integration point): desync fixed (I1 flagged the old binary in 3,490 cases of 3,000,000 targeted, the fixed one never). New invariant oracle found
+  I2 violations with a foreign RCDATA fragment context element (comment child holding the end tag).
+- Mode 5c (foreign RCDATA context elements parse as text): 0 invariant violations in 23,500,000 cases. Remaining canary classes are corner 2, corner 3 and the not-closed-by-design classes.

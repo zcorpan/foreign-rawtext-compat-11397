@@ -13,8 +13,12 @@ in `mxss/private/` (git-ignored).
 **I think so, for parser-built trees, with caveats.** The proposal closes the class that every published post-#6362
 bypass relied on: text, comment, PI or attribute carriers hiding markup in raw text or RCDATA, with a namespace pivot
 changing how the element's end tag is read. In 17.4M Firefox cases with the full proposal as first implemented there is no
-finding of that kind. The fuzzing found three parser-producible corners; the plan addresses them as below, but the
-self-closing fix and the `template for` rule have not been fuzzed yet (they need an implementation):
+finding of that kind. The fuzzing found three parser-producible corners, plus two implementation gaps that the proposal's
+spec text has to rule out (the title end-tag desync and fragment contexts, below). With those fixed in the Gecko build
+(mode 5, commit `5873e678`), 23.5M further cases with a direct invariant oracle (foreign RCDATA elements hold only text,
+comments and PIs, none of which contains the start of the element's end tag; fragment parsing into one yields only text)
+found no violation in any document or fragment context. The `template for` patching rule is specified but not
+implemented in any build:
 
 | # | Corner | Introduced by proposal? | Closable in the spec PR? |
 |---|---|---|---|
@@ -100,7 +104,9 @@ and patching content; `fuzz/RESULTS.md`), and #13100 read from its diff (not imp
 | Differential fuzzer | canary oracle: a live canary element in the reparse that wasn't live in parse 1 | `fuzz/README.md`, `fuzz/RESULTS.md` |
 
 Fuzzer, Firefox with `dom.parser.foreign_rawtext.mode` (0 today, 2 RCDATA, 3 RCDATA with comments dropped, 4 the
-full proposal): about 19.5M, 13.4M, 16.4M and 17.4M cases; Chrome Canary 2.6M baseline cases. Generators:
+full proposal, 5 mode 4 plus self-closing breakout, with two later fixes): about 19.5M, 13.4M, 16.4M and 17.4M cases for
+modes 0, 2, 3 and 4, about 20M for mode 5 before the fixes and 23.5M after; Chrome Canary 2.6M baseline cases and a further
+9.5M with PIs and `template for`. Generators:
 grammar-based tag soup, mutation, real-page seeds, and dedicated ones for namespace pivots, script double-escape,
 self-closing breakout, foreign fragment contexts and DOM-built trees. 30+ reparse contexts, up to three rounds, a
 sanitizer-pruning model, and a JS serializer for emulating pre-#6362 output.
@@ -140,7 +146,15 @@ Limits:
    break and no ordering constraint with the parser change. Parser-built trees, including patched ones, are the goal;
    DOM-built trees aren't (comment data with `-->` already breaks them), so there is no default serializer rule. Stored
    content from old parsers is covered by the opt-in serializer mode and the sanitizer rules.
-4. Make fragment parsing's context-element handling namespace-aware for these elements.
+4. Make fragment parsing's context-element handling namespace-aware for these elements: for a foreign (SVG or MathML)
+   `title`, `style`, `script` or `noscript` context element, set the tokenizer to RCDATA and disable recognition of
+   comments, PIs and bogus comments, so the whole input is text, as for an HTML `title` or `textarea` context. Otherwise
+   a comment child of the context element can hold the element's end tag (found by fuzzing, closed in the Gecko build).
+   Also remove SVG `title` from the HTML integration point list: while it stays one, characters inside it run the "in body"
+   rules, reconstruct the active formatting elements, and the title's matching end tag is processed against an HTML current
+   node and ignored, leaving the title open after the tokenizer has left RCDATA (found by fuzzing, closed in the Gecko build).
+   As defence in depth, have the tree builder pop a foreign RCDATA element whenever its appropriate end tag ends RCDATA,
+   like the HTML "text" insertion mode does.
 5. Corner 3: define #9426 so only a browser whose user or sandbox actually disabled scripting parses with the flag off,
    and everything else (including `DOMParser`, `createHTMLDocument`, fragment parsing and server-side parsers)
    parses with scripting enabled. Tell sanitizer maintainers to parse with scripting enabled and drop `noscript`,

@@ -27,7 +27,8 @@ sanitizer parsers and serializers. They're listed for completeness, not as open 
 - Status columns are cumulative: (a) the spec before [#6362](https://github.com/whatwg/html/issues/6362), which is the state the historical
   bypasses were found against; (b) plus [#6362](https://github.com/whatwg/html/issues/6362); (c) plus [#9426](https://github.com/whatwg/html/issues/9426) (scripting flag no longer depends on
   the document); (d) plus the [#11397](https://github.com/whatwg/html/issues/11397) proposal. "Closed" means closed for conformant, updated
-  engines and parser-created trees. Old browsers, non-conformant serializers (shipping [#6362](https://github.com/whatwg/html/issues/6362)
+  engines and parser-created trees. "Not closed" in a row outside that scope (M6, M9, M10, M11, M13 to M15) means the
+  proposal doesn't address it, not that it's an open gap in the proposal. Old browsers, non-conformant serializers (shipping [#6362](https://github.com/whatwg/html/issues/6362)
   lagged: Nokogiri 1.19.5, Nov 2026) and server-side parsers keep their own status.
 
 ## Summary table
@@ -228,7 +229,7 @@ their payoff: every published instance needed a carrier from M1 to M4 (text, att
 in an element whose tokenization flips with the pivot). Under (b)+(d) those carriers are gone for
 namespace flips. What a structural pivot can still do without a carrier: change which element
 owns a node (form owner, M11 text merging, element identity). I think that cannot yield markup
-injection by itself, but I cannot prove it (see "classes that might survive").
+injection by itself, but I cannot prove it (see "Beyond the parser").
 
 ### M8: removal or rewrite creates the pivot
 
@@ -375,21 +376,25 @@ already has a simpler hole.
   `ADD_TAGS` precedence, `SAFE_FOR_TEMPLATES` regex bugs).
 - Server-side string concatenation that places sanitized output after unrelated markup.
 
-## Classes that might survive
+## Beyond the parser: classes the proposal doesn't address
 
-1. **Sink-context mismatch (M6).** Survives for HTML wrappers with comment, PI or literal-text
+Not parse-serialize-parse mismatches of parser output, so out of scope for the question; they need other fixes (the
+application, the serializer, sanitizers, new-feature specs). Items 5 and 7 are in scope; the fuzzing campaign covered them
+(see `README.md`) and found nothing further.
+
+1. **Sink-context mismatch (M6).** Not addressed for HTML wrappers with comment, PI or literal-text
    carriers. Needs the application to put output in a different context. Not fixable in the parser.
-2. **DOM-created nodes (M9) and `IN_PLACE`-style APIs.** Survives. The parser cannot produce
+2. **DOM-created nodes (M9) and `IN_PLACE`-style APIs.** Not addressed. The parser cannot produce
    these trees, so the serializer is the only lever; making the serializer escape unsafe
    text (for instance serialize raw text only when it cannot close the element) would be a spec
    change of a different kind. The README's "serializer mode" idea is the nearest candidate.
-3. **Parse-time DOM generation (M10).** Survives; per-feature (`selectedcontent`, `template for`,
+3. **Parse-time DOM generation (M10).** Not addressed; per-feature (`selectedcontent`, `template for`,
    declarative shadow DOM). Each new feature that generates nodes after parsing reopens it.
 4. **Noscript with external parsers (M5).** After [#9426](https://github.com/whatwg/html/issues/9426), closed for browser-internal pairs, not for
    library parsers with their own flag and not for users with scripting disabled. Also depends on
    what [#9426](https://github.com/whatwg/html/issues/9426) specifies for `template` contents and for `DOMParser`; I did not read the final text.
-5. **Structural pivots without published carriers (M7, M8, M11).** Survive as pivots. What I
-   could not rule out: an element-identity flip (SVG `image` to HTML `img`, `a`, `title`) combined
+5. **Structural pivots without published carriers (M7, M8, M11).** Remain as pivots, with no carrier to hide markup in. What I
+   could not rule out from the literature alone (the fuzzing found no case): an element-identity flip (SVG `image` to HTML `img`, `a`, `title`) combined
    with attributes the sanitizer allows for the SVG identity; PIs and `<template for>`
    interacting with [#12118](https://github.com/whatwg/html/issues/12118) (PIs now parse in HTML; their serializer output and the PI
    terminator rules need a round-trip proof, and DOM or XML-created PIs can contain `>`);
@@ -401,8 +406,8 @@ already has a simpler hole.
    content, and sanitizers parsing with html5lib, ammonia, jsdom or Nokogiri before the browser
    ships, keep M1 to M4 for as long as old browsers exist (the README's transition section covers
    the sanitizer-side checklist).
-7. **Residual M16 and PI/comment edge cases in the tokenizer.** Unsure; both need a fuzzer
-   rather than a literature answer: round-trip every parser-created comment and PI through
+7. **Residual M16 and PI/comment edge cases in the tokenizer.** Needed a fuzzer rather than a literature answer; the
+   campaign did it (M16 is the accepted exception; no PI or comment case found): round-trip every parser-created comment and PI through
    serialize and reparse under every pivot context, and compare against a model of the new
    tokenizer.
 

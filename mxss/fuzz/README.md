@@ -20,6 +20,9 @@ cause was not confirmed, but the numbers match). Before running it for hours:
 - an interrupted run leaves Firefox processes behind: `reap.py` kills them. Older versions of the driver
   leaked a browser each time a worker restarted after a crash or hang; the current driver reaps them.
 
+Firefox mode 5 build, 3 workers at `--batch 10000`: summed RSS of all Nightly processes peaked at about 26 GB
+(same caveats; roughly 8-9 GB per worker, so keep to 3 workers on a 48 GB machine).
+
 Chrome Canary 160 (headless, 3 workers, `--batch 10000`): summed RSS of all Canary processes peaked at about
 9.4 GB (about 3 GB per worker; the sum double-counts shared pages and includes any other Canary on the machine).
 `memwatch.py OUT` logs it every 15 s. Chrome workers use `--user-data-dir` under `mxss/private/profiles/`.

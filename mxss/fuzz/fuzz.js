@@ -256,7 +256,7 @@ function mkCtx(spec) {
   return el;
 }
 const WRAP = ['xmp', 'iframe', 'noembed', 'noframes', 'noscript', 'style', 'textarea', 'title', 'select', 'table', 'svg', 'math', 'template', 'plaintext'];
-function parseIn(ctx, s) {
+let parseIn = function (ctx, s) {
   if (ctx === 'u:doc') { const d = Document.parseHTMLUnsafe(s); return {root: d, pruneRoot: d.body, ser: () => d.body ? (SEROPT.js ? jsSer(d.body) : d.body.innerHTML) : ''}; }
   if (ctx === 'u:h:div') { const el = mkCtx('h:div'); el.setHTMLUnsafe(s); return {root: el, pruneRoot: el, ser: () => SEROPT.js ? jsSer(el) : el.innerHTML}; }
   if (ctx === 'dw') { const d = document.implementation.createHTMLDocument(''); d.open(); d.write(s); d.close(); return {root: d, pruneRoot: d.body, ser: () => d.body ? (SEROPT.js ? jsSer(d.body) : d.body.innerHTML) : ''}; }
@@ -272,7 +272,8 @@ function parseIn(ctx, s) {
   const el = mkCtx(ctx); el.innerHTML = s;
   const tpl = el.localName === 'template' && el.namespaceURI === NS.h;
   return {root: el, pruneRoot: tpl ? el.content : el, ser: () => SEROPT.js ? jsSer(el) : el.innerHTML};
-}
+};
+
 function scan(root, names, live, pis) {
   const stack = [root];
   while (stack.length) {
@@ -353,9 +354,11 @@ function genSelfClose(rng) {
 }
 function genTargeted(rng, force) {
   if (force === 'selfclose') return genSelfClose(rng);
+  if (force === 'desync') return genDesync(rng);
   const out = []; const raw = R(rng, RAW);
   const k = rng();
   if (!force && k > 0.9) return genSelfClose(rng);
+  if (!force && k > 0.82) return genDesync(rng);
   const nPiv = Math.floor(rng() * 4);
   for (let i = 0; i < nPiv; i++) out.push(R(rng, PIVOTS));
   if (chance(rng, 0.4)) out.push(R(rng, ['<svg>', '<math>', '<svg>']));
@@ -454,6 +457,38 @@ function genPiTf(rng) {
   return out;
 }
 
+
+// ---------- desync generator: formatting-list / reconstruction triggers around foreign RCDATA elements ----------
+const DS_FMT = ['<b>', '<a>', '<i>', '<strong>', '<em>', '<font>', '<nobr>', '<u>', '<code>', '<s>', '<big>', '<small>', '<tt>', '<a href=x>', '<b><i>', '<a><b>', '<p><b>', '<p><a>', '<p><i><b>', '<b><p>', '<a><table>', '<table><b>', '<table><tr><td><b>', '<select><b>', '<template><b>', '<button><b>', '<li><b>', '<h1><b>', '<div><b>'];
+const DS_CLOSE = ['</p>', '</b>', '</a>', '</i>', '</div>', '</table>', '</td>', '</select>', '</template>', '</li>', '</h1>', '</button>', '</nobr>', '<p>', '<br>', '</span>', ''];
+const DS_IP = ['', '', '<foreignObject>', '<desc>', '<mtext>', '<mi>', '<annotation-xml encoding="text/html">', '<svg>', '<math>', '<svg><foreignObject>', '<math><mtext>', '<svg><desc>', '<svg><title>', '<g>', '<mrow>'];
+function genDesync(rng) {
+  const out = [];
+  const nf = 1 + Math.floor(rng() * 2);
+  for (let i = 0; i < nf; i++) { out.push(R(rng, DS_FMT)); if (chance(rng, 0.4)) out.push(R(rng, ['x', '<!--c-->', ''])); }
+  if (chance(rng, 0.85)) out.push(R(rng, DS_CLOSE));
+  if (chance(rng, 0.5)) out.push(R(rng, DS_IP));
+  const raw = R(rng, ['title', 'title', 'style', 'script', 'noscript', 'title', 'textarea', 'xmp']);
+  const nm = caseVar(rng, raw);
+  out.push('<' + nm + R(rng, ['', '', ' id=t']) + '>');
+  const k = Math.floor(rng() * 3);
+  for (let i = 0; i < k; i++) out.push(R(rng, ['x', '<b>', '</b>', '<!--c-->', '&amp;', '<a>', '</p>', textTok(rng)]));
+  out.push('</' + nm + R(rng, ['>', ' >', '/>', ' x>']));
+  const tail = 1 + Math.floor(rng() * 3);
+  for (let i = 0; i < tail; i++) {
+    const r = rng();
+    if (r < 0.35) out.push(R(rng, CMT_START), '</' + caseVar(rng, raw) + R(rng, ['>', ' >', '/>']) + (chance(rng, 0.7) ? payload(rng) : ''), R(rng, CMT_END));
+    else if (r < 0.5) out.push(piWithPayload(rng));
+    else if (r < 0.6) out.push('<![CDATA[', '</' + raw + '>' + payload(rng), ']]>');
+    else if (r < 0.7) out.push(R(rng, ['<!', '</']), '</' + raw + '>' + payload(rng), '>');
+    else if (r < 0.8) out.push(R(rng, DS_FMT));
+    else if (r < 0.9) out.push(textTok(rng));
+    else out.push(payload(rng));
+  }
+  return out;
+}
+const DESYNC_T1 = ['s:svg', 'm:math', 's:g', 'm:mrow', 's:foreignObject', 's:desc', 'm:mtext', 'm:annotation-xml;text/html', 'doc', 'doc', 'h:div', 'h:template', 'h:td', 'h:select', 's:title', 'm:mi'];
+
 const DOMRAW = ['title', 'style', 'script', 'noscript', 'textarea', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext', 'svg', 'math', 'div'];
 function genDom(rng) {
   const ns = R(rng, ['h', 's', 'm']), name = R(rng, DOMRAW), kids = [];
@@ -482,11 +517,46 @@ function buildDom(d) {
 }
 const RAWCTX_RE = /^[hsm]:(style|script|title|textarea|xmp|iframe|noembed|noframes|noscript|plaintext)$/;
 
+
+// ---------- direct invariants (no round trip): foreign title/style/script/noscript hold only text/comment/PI (I1), comment/PI data never
+// holds the element's end tag (I2), no foreign textarea/xmp/iframe/noembed/noframes/plaintext (I3)
+const INV_RC = new Set(['title', 'style', 'script', 'noscript']);
+const INV_BRK = new Set(['textarea', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext']);
+let INV = {on: false, n: 0, keys: new Set()};
+function invariants(root, tag, out) {
+  const stack = [root];
+  while (stack.length) {
+    const n = stack.pop();
+    if (n.nodeType === 1) {
+      const k = nsKey(n);
+      if (k === 's' || k === 'm') {
+        const ln = n.localName.toLowerCase();
+        if (INV_BRK.has(ln) && n !== root) out.add(tag + '|I3:' + k + ':' + ln);
+        if (INV_RC.has(ln)) {
+          const re = new RegExp('</' + ln + '[\\s/>]', 'i');
+          for (let c = n.firstChild; c; c = c.nextSibling) {
+            if (c.nodeType === 1) out.add(tag + '|I1:' + k + ':' + ln + ':element');
+            else if ((c.nodeType === 8 || c.nodeType === 7) && re.test(c.data)) out.add(tag + '|I2:' + k + ':' + ln + ':' + (c.nodeType === 8 ? 'comment' : 'pi'));
+          }
+        }
+      }
+      if (n.localName === 'template' && n.namespaceURI === NS.h && n.content) stack.push(n.content);
+    }
+    for (let c = n.lastChild; c; c = c.previousSibling) stack.push(c);
+  }
+}
+const parseIn0 = parseIn;
+parseIn = function (ctx, s) {
+  const r = parseIn0(ctx, s);
+  if (INV.on) { INV.n++; try { invariants(r.root, (INV.n === 1 ? 'T1@' : 'T2@') + ctx, INV.keys); } catch (e) { /* ignore */ } }
+  return r;
+};
+
 // ---------- oracle ----------
-const DEFAULT_T1 = ['doc', 'doc', 'h:div', 'h:div', 's:svg', 'm:math', 'h:template', 'h:td', 'h:select', 'h:table', 's:style', 's:title', 's:script', 'm:style', 's:noscript', 's:textarea', 'h:style', 'h:title'];
+const DEFAULT_T1 = ['doc', 'doc', 'h:div', 'h:div', 's:svg', 'm:math', 'h:template', 'h:td', 'h:select', 'h:table', 's:style', 's:title', 's:script', 'm:style', 's:noscript', 's:textarea', 'h:style', 'h:title', 's:g', 'm:mrow', 's:foreignObject', 's:desc', 'm:mtext', 'm:annotation-xml;text/html'];
 const DEFAULT_T2 = ['doc', 'h:div', 's:svg', 'm:math', 'h:template', 'h:table', 'h:tbody', 'h:tr', 'h:td', 'h:select', 's:foreignObject', 'm:mtext', 'm:annotation-xml;text/html', 's:title', 'h:body'].concat(['s:style', 's:title', 's:script', 'm:title', 's:noscript', 's:xmp', 's:textarea'], WRAP.map(w => 'w:' + w));
 // Returns {discard} | {findings:[...], struct: key|null}
-function evalSpec(spec, wantAll) {
+function evalSpec0(spec, wantAll) {
   SEROPT = spec.ser === 'legacy' ? {js: true, angle: false, scripting: false} : spec.ser === 'js' ? {js: true, angle: true, scripting: false} : {js: false};
   let t1;
   if (spec.dom) t1 = buildDom(spec.dom);
@@ -506,7 +576,7 @@ function evalSpec(spec, wantAll) {
   const pis1 = []; const names1 = new Map(); scan(t1.root, names1, null, pis1);
   const res = {findings: [], struct: null, S, tfNote};
   const paths = spec.path ? [spec.path] : null;
-  const t2list = paths ? [paths[0][0]] : spec.t2;
+  const t2list = paths ? [paths[0][0]] : (spec.t2 || []);
   let carrier = null;
   const HTMLISH = ['doc', 'h:div', 'h:body'];
   const mkFinding = (path, T2root, live, depth, Sx) => {
@@ -546,6 +616,20 @@ function evalSpec(spec, wantAll) {
   return res;
 }
 
+function evalSpec(spec, wantAll) {
+  if (spec.invKind) spec = Object.assign({}, spec, {keepAll: true});
+  INV = {on: true, n: 0, keys: new Set()};
+  let r;
+  try { r = evalSpec0(spec, wantAll); } finally { INV.on = false; }
+  const keys = Array.from(INV.keys).sort();
+  if (spec.invKind) {
+    const want = spec.sig ? spec.sig.slice(4) : null;
+    const k = want && INV.keys.has(want) ? want : keys[0];
+    return {findings: k ? [{sig: 'inv:' + k, depth: 0, path: [spec.t1]}] : [], inv: keys};
+  }
+  r.inv = keys;
+  return r;
+}
 // ---------- minimizer ----------
 function ddmin(arr, test, deadline) {
   let n = 2, cur = arr.slice();
@@ -611,7 +695,7 @@ function genSpec(rng, cfg) {
   if (kind !== 'grammar' && chance(rng, 0.5) && !toks.some(t => t.includes(MARK))) ensurePayload(rng, toks);
   if (kind === 'grammar' || kind === 'target' || kind === 'pitf') ensurePayload(rng, toks);
   { let k = 0; toks = toks.map(t => t.replace(/X7Q\d*/g, () => MARK + (k++))); }
-  const spec = {tokens: toks, t1: R(rng, cfg.t1), t2: cfg.t2, kind, ser: cfg.ser};
+  const spec = {tokens: toks, t1: (cfg.tk === 'desync' && chance(rng, 0.8)) ? R(rng, DESYNC_T1) : R(rng, cfg.t1), t2: cfg.t2, kind, ser: cfg.ser};
   if (cfg.t2sample && cfg.t2.length > cfg.t2sample) {
     const pool = cfg.t2.filter(c => c !== spec.t1), pick = [];
     while (pick.length < cfg.t2sample - 1 && pool.length) pick.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
@@ -625,7 +709,7 @@ function genSpec(rng, cfg) {
 }
 const FZ = {
   gen(base, i) { return genGrammar(mulberry32(hash2(base, i))); },
-  evalSpec, minimize, MARK, state, jsSer, setSer(o) { SEROPT = o; },
+  evalSpec, minimize, MARK, state, jsSer, invCheck(html, ctx) { const o = new Set(); const hd2 = document.implementation.createHTMLDocument(''); INV = {on: false, n: 0, keys: o}; const r = parseIn0(ctx, html); invariants(r.root, 'T1', o); return Array.from(o); }, setSer(o) { SEROPT = o; },
   getCorpus() { return state.corpus; },
   setCorpus(c, seen) { state.corpus = c; state.structSeen = new Set(seen || []); },
   getSeen() { return Array.from(state.structSeen).slice(0, 20000); },
@@ -650,6 +734,16 @@ const FZ = {
       try { r = evalSpec(spec); } catch (e) { st.errors++; st.lastError = String(e).slice(0, 200); continue; }
       st.cases++;
       st.kinds[spec.kind] = (st.kinds[spec.kind] || 0) + 1;
+      if (r.inv && r.inv.length) {
+        st.inv = st.inv || {};
+        for (const k of r.inv) {
+          st.inv[k] = (st.inv[k] || 0) + 1;
+          if (!skip.has('inv:' + k) && samples.filter(x => x.sig === 'inv:' + k).length < 1) {
+            const m = /^T2@(.*?)\|/.exec(k);
+            samples.push({sig: 'inv:' + k, spec: Object.assign({}, spec, {invKind: true, sig: 'inv:' + k, path: m ? [m[1]] : undefined, t2: undefined, deep: undefined}), idx: i});
+          }
+        }
+      }
       if (r.discard) { st.discard++; continue; }
       if (r.noCanary) { st.noCanary++; continue; }
       st.t1[spec.t1] = (st.t1[spec.t1] || 0) + 1;

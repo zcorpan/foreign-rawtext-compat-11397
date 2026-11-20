@@ -143,3 +143,38 @@ Conclusions:
   mismatches only; no canary became live through it alone.
 - Baseline comparison: `chrome-nopitf` and `chrome-pitf` have the same baseline classes (M1, M3/M7-style comment carriers, M4, M6, M9, rawctx);
   the only extra signatures in `chrome-pitf` are the `template for` ones above.
+
+## Mode 5 (mode 4 plus self-closing breakout)
+
+Binary: copy of the mode 4 build plus the six breakout elements (`textarea`, `xmp`, `iframe`, `noembed`, `noframes`, `plaintext`)
+breaking out of foreign content even when self-closing (commit 58df02c3). `--batch 10000`, 3 workers.
+Cases: scratch 12,000,000, seeded 2,100,000, noscriptmix 400,000, targeted self-closing 3,000,000, plus the 31 calibration seeds.
+Mode 4 had 12,000,000 / 2,000,000 / 400,000 / 3,000,000 under the same configurations (mode 4's batch size was 100,000).
+
+- Corner 1 (self-closed breakout element) is gone: the targeted self-closing run has 0 findings outside the not-closed-by-design classes
+  (mode 4: 82 cases in 9 signatures), and scratch has 0 (mode 4: 1). `same`, `toHtml` and `toForeign` classes are empty in that run.
+- Calibration: mode 5 flags 4/31 seeds, the same ones as modes 2 to 4 (M5 and M6).
+- `plaintext` serialization (writes `</plaintext>`, reparses as text) produces no finding on its own: no `plaintext` signature appears
+  outside the noscript/pivot cases of corner 3, the sink-wrapper and fragment-context classes.
+
+Remaining signature classes in mode 5 (cases, signatures):
+
+| class | scratch | seeded | selfclose | noscriptmix |
+|---|---|---|---|---|
+| sink wrappers (M6) | 40,541 (429) | 12,184 (358) | 101,171 (144) | 5,906 (203) |
+| DOM-built (M9) | 216,908 (298) | 37,954 (278) | 54,258 (283) | 7,279 (233) |
+| raw/foreign-raw fragment context | 241,920 (273) | 49,545 (193) | 43,662 (85) | 14,902 (120) |
+| corner 2: HTML `script` text vs foreign `script` (double escape, `<!`/`<?` prefixes) | 1,113 (9) | 134 (8) + 108 (1) | 0 | 193 (5) |
+| corner 3: HTML `noscript` (scripting off) with raw/comment child vs foreign `noscript`, after an `mglyph`/`table` pivot (DOMParser docs both sides) | 0 | most of 788 (28) | 0 | most of 68 (14) |
+| NEW: foreign RCDATA `title` ended early (see below) | 27 cases (about 6 signatures) | 0 | 0 | 0 |
+
+NEW class, not in the earlier corners: tokenizer/tree-builder desync on the end tag of a foreign RCDATA element. Fragment parsing with an SVG
+or MathML context element (`svgEl.innerHTML = ...`), a formatting element (`a`, `strong`, ...) left open by an earlier `</p>`, then a foreign `title`:
+the formatting element is reconstructed inside the title, so the current node is an HTML element. The title's end tag ends the
+tokenizer's RCDATA state, but the tree builder ignores the end tag (no HTML element named `title` on the stack), so the title stays open and a
+following comment or bogus comment, which holds that end tag, becomes a child of the title. The parser has produced a comment inside a foreign RCDATA
+element that holds the element's end tag, which the proposal's rule is meant to rule out. Serialized and reparsed, the end tag ends the comment and the title, and
+the markup after it is live (`toHtml`, `toForeign`, different T2 contexts, all with an SVG fragment context for T1). The same tree shape already appears in mode 0
+and Chrome (formatting element and comment inside a foreign title), where it is harmless because foreign title is markup. A mode 4 binary isn't available any more,
+and the 12M mode-4 scratch run didn't produce it, so whether mode 4 shows it is unconfirmed (it shares the tree builder). Likely an implementation or spec gap (the
+tree builder must close the element when the tokenizer's appropriate end tag ends RCDATA); I didn't test other elements (`style`, `script`, `noscript`) separately.

@@ -8,7 +8,7 @@ ns = {"__file__": os.path.join(HERE, "bucket.py")}
 exec(src, ns)
 bucket = ns["bucket"]
 ORDER = ["ff-m0-scratch", "ff-m2-scratch", "ff-m3-scratch", "ff-m4-scratch", "chrome-scratch", "ff-m0-seeded", "ff-m2-seeded", "ff-m3-seeded", "ff-m4-seeded", "chrome-seeded",
-         "ff-m0-selfclose", "ff-m3-selfclose", "ff-m4-selfclose", "ff-m0-noscriptmix", "ff-m2-noscriptmix", "ff-m3-noscriptmix", "ff-m4-noscriptmix", "ff-m0-legacyser"]
+         "ff-m0-selfclose", "ff-m3-selfclose", "ff-m4-selfclose", "ff-m0-noscriptmix", "ff-m2-noscriptmix", "ff-m3-noscriptmix", "ff-m4-noscriptmix", "ff-m0-legacyser", "ff-m5-scratch", "ff-m5-seeded", "ff-m5-selfclose", "ff-m5-noscriptmix"]
 allb = set(); rows = {}
 for label in ORDER:
     sigb = {}

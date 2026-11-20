@@ -72,9 +72,12 @@ and patching content; `fuzz/RESULTS.md`), and #13100 read from its diff (not imp
   fixes; stored content and old parsers only get the first.
 - **`contentnamespace` is a new, attacker-supplied namespace pivot for old parsers.** A parser that doesn't know the
   attribute parses the template contents in the HTML namespace, and a browser that does parses them in SVG or MathML. With
-  today's tokenization that is M1 (raw-text elements are text in one and markup in the other). Sanitizers whose attribute
-  allowlist drops unknown attributes aren't exposed; blocklist-style ones are. #11397 makes tokenization namespace-independent
-  and so removes the carrier, except for the `script` and `noscript` corners. So #11397 should be implemented before, or
+  today's tokenization that is M1 (raw-text elements are text in one and markup in the other). An allowlist doesn't help when
+  the sanitizer parses with something that knows the attribute: the contents are parsed as SVG, the allowlist drops the unknown
+  attribute, and if the serialization doesn't carry it (the spec's serializer re-emits it from the template's content
+  namespace, so this needs a sanitizer that rebuilds nodes or serializes itself) they reparse as HTML. The reverse (an
+  old parser, a sanitizer that keeps the attribute: a blocklist, or an allowlist whose config allows it) is exposed too.
+  #11397 makes tokenization namespace-independent and so removes the carrier, except for the `script` and `noscript` corners. So #11397 should be implemented before, or
   in the same release as, #13100's `contentnamespace`. (The Sanitizer API's safe default would allow the attribute, but it
   sanitizes while parsing, so both sides agree.)
 - **Coordination points in #13100's text:**

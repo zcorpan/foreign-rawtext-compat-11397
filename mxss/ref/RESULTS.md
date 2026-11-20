@@ -63,29 +63,32 @@ that reason or because the .dat counts come from another checker.
 `frnew.make_parser("old1")`: today's spec (no foreign RCDATA state, old breakout list, SVG `title` still an
 HTML integration point, fragment contexts as before) using the same spec-faithful tokenizer states as "new",
 plus the step 1 errors, recorded as `step1-*` codes: `step1-start-tag-in-foreign-rcdata-element` (dispatcher),
-`step1-foreign-start-tag-html-rawtext`, `step1-comment-contains-end-tag`, `step1-pi-contains-end-tag`,
-`step1-end-tag-in-cdata-section`. Parsers are cached per mode, so one parse takes about 0.1 ms.
+`step1-fragment-context-non-start-tag` (fragment paragraph), `step1-foreign-start-tag-html-rawtext`, and
+`step1-end-tag-in-comment-cdata-or-processing-instruction` (tokenizer: a `<` in a comment, bogus comment, PI or CDATA
+section followed by `/`, the element's name and a delimiter). Parsers are cached per mode, so one parse takes about
+0.1 ms.
 
     python3 differential.py --n 40000 --max-min 500     # about 1 minute of CPU
 
-Corpus: every `#data` in resources/*.dat (1934 distinct) plus 40000 seeded generated tag-soup inputs, each in 11
+Corpus: every `#data` in resources/*.dat (1960 distinct) plus 40000 seeded generated tag-soup inputs, each in 11
 contexts (document, `div`, `svg`, `math`, `svg title|style|script|noscript`, `math title`, `svg desc`,
-`svg foreignObject`): 461261 cases, 0 crashes. A = trees differ between old1 and new; B = old1 has a step1 error.
+`svg foreignObject`): 461552 cases, 0 crashes. A = trees differ between old1 and new; B = old1 has a step1 error.
 
 | | cases |
 |---|---|
-| A | 269687 |
-| B | 263728 |
-| A and B | 263711 |
-| A without B | 5976 |
-| B without A | 17 |
+| A | 269875 |
+| B | 263905 |
+| A and B | 263894 |
+| A without B | 5981 |
+| B without A | 11 |
 
 Every A-without-B case already has an ordinary parse error in old1 (0 cases with no error at all, besides a missing
-doctype), so "every input whose parse changes has a parse error today" holds on this corpus. Two earlier gaps were
-closed in the step 1 text: markup in fragment parses into a foreign title/style/script/noscript context (the fragment
-context paragraph), and a processing instruction or bogus comment that ends at the `>` of the end tag, whose data ends
-with `</name` without the delimiter (the "ends with" clause; the balanced input
-`<svg><style><?a b</style></style></svg>` had no error at all before).
+doctype), so "every input whose parse changes has a parse error today" holds on this corpus. Earlier gaps closed in the
+step 1 text: markup in fragment parses into a foreign title/style/script/noscript context (the fragment context
+paragraph), and a PI or bogus comment that ends at the `>` of the end tag (the balanced input
+`<svg><style><?a b</style></style></svg>` had no error at all at first). The comment and PI check is now in the
+tokenizer, at the same point where step 2 ends the element, so `<svg><title><!--</title-->` and `<?x </title?>`
+(where step 2 parses the same) aren't reported.
 
 The A-without-B cases carry an ordinary tokenizer error; the tree changes but no `step1-*` error is added:
 - Start tag cut off by EOF inside the element (`<svg><style><l`): new turns the partial tag into text.
@@ -93,12 +96,9 @@ The A-without-B cases carry an ordinary tokenizer error; the tree changes but no
 - NUL in an SVG `title` (today an HTML integration point, so in body drops it; new gives U+FFFD).
 - The same constructs in the fragment contexts above.
 
-B without A (17 cases): `step1-end-tag-in-cdata-section` for `<![CDATA[</title>` in a fragment
-with context `svg title` (and style/script/noscript, `math title`). The fragment parse leaves the flag unset, so
-the CDATA text is the same in both; the error is reported but the tree does not change (harmless over-report).
-The 6 document cases are `<svg><Title><?</title` at EOF: the bogus comment data ends with `</title` because the input
-ended, and the tree is the same in both. "Ends with" cannot tell EOF from the end tag's `>`, so truncated input is
-over-reported (harmless).
+B without A (11 cases): the parse error for `<![CDATA[</title>` in a fragment with context `svg title` (and
+style/script/noscript, `math title`). The fragment parse leaves the flag false, so the CDATA text is the same in both;
+the error is reported but the tree does not change (kept on purpose).
 
 ## Known deviations of the reference parser (audit)
 

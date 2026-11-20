@@ -135,12 +135,6 @@ class TreeBuilder(base.TreeBuilder):
         if parent is None:
             parent = self.openElements[-1]
         d = token["data"]
-        if (self.errorHook and parent.kind == "element" and parent.namespace != HTML_NS
-                and parent.name in FOREIGN_RCDATA_NAMES):
-            pi = isinstance(d, PIData)
-            if has_end_tag(d.pidata if pi else d, parent.name):
-                self.errorHook("step1-pi-contains-end-tag" if pi
-                               else "step1-comment-contains-end-tag")
         parent.appendChild(CommentNode(d))
 
     def insertDoctype(self, token):
@@ -930,25 +924,44 @@ class NewParser(html5parser.HTMLParser):
 
 class Old1Tokenizer(NewTokenizer):
     """Today's spec tokenizer (never enters foreign RCDATA) plus the step 1
-    end-tag-in-cdata-section parse error."""
+    end-tag-in-comment-cdata-or-processing-instruction parse error, reported at a "<" in the
+    comment, comment less-than sign, bogus comment, processing instruction data and CDATA
+    section states when there is a foreign RCDATA end tag ahead."""
+
+    def _endTagAhead(self):
+        node = self.parser.adjustedCurrentNode() if self.parser else None
+        if node is None or node.namespace not in (namespaces["svg"], namespaces["mathml"]) \
+                or node.name not in FOREIGN_RCDATA_NAMES:
+            return False
+        n = len(node.name)
+        s = self.peek(n + 2)
+        if EOF in s:
+            return False
+        s = "".join(s)
+        return (s[0] == "/" and s[1:1 + n].translate(LOWER) == node.name
+                and s[1 + n] in "\t\n\f />")
+
+    def _check(self, base):
+        c = self.stream.char()
+        if c == "<" and self._endTagAhead():
+            self.err("step1-end-tag-in-comment-cdata-or-processing-instruction")
+        self.stream.unget(c)
+        return base(self)
 
     def cdataSectionState(self):
-        c = self.stream.char()
-        if c == "<":
-            node = self.parser.adjustedCurrentNode() if self.parser else None
-            if (node is not None and node.namespace != HTML_NS
-                    and node.name in FOREIGN_RCDATA_NAMES):
-                n = len(node.name)
-                s = self.peek(n + 2)
-                if EOF not in s:
-                    s = "".join(s)
-                    if (s[0] == "/" and s[1:1 + n].translate(LOWER) == node.name
-                            and s[1 + n] in "\t\n\f />"):
-                        self.err("step1-end-tag-in-cdata-section")
-            self.emitChar(c)
-            return True
-        self.stream.unget(c)
-        return NewTokenizer.cdataSectionState(self)
+        return self._check(NewTokenizer.cdataSectionState)
+
+    def commentState(self):
+        return self._check(NewTokenizer.commentState)
+
+    def commentLessThanSignState(self):
+        return self._check(NewTokenizer.commentLessThanSignState)
+
+    def bogusCommentState(self):
+        return self._check(NewTokenizer.bogusCommentState)
+
+    def piDataState(self):
+        return self._check(NewTokenizer.piDataState)
 
 
 class Old1Parser(NewParser):

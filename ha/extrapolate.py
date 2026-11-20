@@ -18,7 +18,7 @@ def cp(k, n, a=0.05):
 rows = [
     ("rcdata (mode 2): visibly broken", 1, 100, 1444),
     ("rcdata-dc (mode 3): visibly broken", 0, 100, 1444),
-    ("modes 2 and 3: React hydration errors", 4, 100, 1444),
+    ("modes 2 and 3: pages with React hydration errors", 2, 100, 1444),
     ("raw (mode 1), Wix: icons visibly recolored after load", 5, 100, 225901),
     ("raw (mode 1), Wix: style text still escaped after load", 17, 100, 225901),
 ]

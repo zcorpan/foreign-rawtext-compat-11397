@@ -37,8 +37,8 @@ HTTP Archive, 2026-10-01, mobile, root pages' main documents (15,360,905):
 
 | Variant | Pages that parse differently | Visible breakage, live sample |
 |---|---|---|
-| raw | ~225,800 (1.47%), essentially all Wix | 5/100 Wix pages recolored → ~11,300 (95% CI 3,700–25,500) |
-| rcdata | 1,449 (0.0094%) | 1/100 → ~14 (CI 0–79), plus 3 unclosed pages |
+| raw | ~225,900 (1.47%), many Wix (238/500 sampled pages have Wix's `data-color` rule) | 5/100 Wix pages recolored → ~11,300 (95% CI 3,700–25,500) |
+| rcdata | 1,449 (0.0094%) | 1/100 of the 1,444 without the 5 unclosed pages → ~14 (CI 0–79), plus 3 unclosed pages |
 | rcdata-dc | 1,449: 346 (0.0023%) with other changes, 1,103 only lose comment nodes | 0/100 (CI 0–52), plus the same 3 |
 | rcdata-c | 348 (0.0023%) | not run live; same DOM as rcdata-dc apart from comment nodes |
 | breakout (6 elements) | 1 page with a real SVG/MathML one | an SVG `iframe` embedding YouTube would start loading |
@@ -59,12 +59,12 @@ In review images, today is on the left.
   SVG `<script>` containing `&amp;&amp;` (SyntaxError on 2 Common Crawl pages).
 - **Comments and tags become text (rcdata, rcdata-dc)**:
   - React's `<!-- -->` text separators in SVG `<title>`/`<style>` give React hydration errors
-    (React errors [418](https://react.dev/errors/418), [423](https://react.dev/errors/423) and [425](https://react.dev/errors/425), client-side recovery) on ~58 pages (CI 16–143) in both modes.
+    (React errors [418](https://react.dev/errors/418), [423](https://react.dev/errors/423) and [425](https://react.dev/errors/425), client-side recovery) on 2/100 live pages, ~29 pages (CI 4–102) in both modes.
   - The same applies to Angular/Lit markers and kbb.com's `<!--t.…-->`, which duplicated titles
     live.
   - Translation-widget elements (`<ly-as-N>`), `<span>`/`<br>` in titles, `<tspan>` in `<style>`.
   - Drupal-style `<!--/*--><![CDATA[/* ><!--*/` wrappers.
-  - PIs (`<?php`): 11 pages.
+  - PIs (`<?php`): 11 pages, 10 in `<title>` and 1 in `<style>`.
 - **Commented-out CSS becomes active (rcdata only)**: `<!-- .st0{fill:none;} -->` inside SVG
   `<style>` made icons invisible
   ([review/rcdata-vcsdurability-commented-css-activated.png](review/rcdata-vcsdurability-commented-css-activated.png)).
@@ -97,7 +97,7 @@ In review images, today is on the left.
   - Of the 2,987 HTTP Archive pages with one of the six inside an SVG/MathML block (regex), fetched
     live and parsed (27 fetch errors), only petrovskaja-school.ru has a real one: an SVG `iframe`
     embedding YouTube, with nothing in SVG after it.
-  - `noscript` can't break out. In the downloaded bodies, 22 SVG `noscript` hold Google Tag
+  - `noscript` can't break out. In the downloaded bodies, 19 of the 22 SVG `noscript` hold Google Tag
     Manager's `<noscript><iframe …>` (all 15 SVG `iframe`s are inside one) or WordPress's
     `<noscript><link …>` font fallback, injected just inside a hidden SVG sprite at the start of
     `<body>`. On 15 of the 22, SVG content follows (`symbol`, `g`, gradients). Breaking out would
@@ -127,8 +127,8 @@ In review images, today is on the left.
     `<title>` would.
   - A DOM-created comment containing the end tag can still break out, as in every variant and as
     text in HTML `style` does today.
-  - For PIs, compat doesn't require it: the 11 pages are all unprocessed `<?php … ?>` in SVG
-    `<title>`, plus 1 in Common Crawl. Consistency does: HTML now parses PIs ([whatwg/html#12118](https://github.com/whatwg/html/issues/12118))
+  - For PIs, compat doesn't require it: the 11 pages are unprocessed `<?php … ?>` in SVG
+    `<title>` (10) and `<style>` (1), plus 1 in Common Crawl. Consistency does: HTML now parses PIs ([whatwg/html#12118](https://github.com/whatwg/html/issues/12118))
     for `<template for>` ([whatwg/html#11818](https://github.com/whatwg/html/issues/11818)), and [whatwg/html#13100](https://github.com/whatwg/html/issues/13100) would allow `<template>` in
     SVG/MathML. It would be odd for PIs to work in most SVG elements but not in `<title>`, where
     comments work.
@@ -161,7 +161,7 @@ In review images, today is on the left.
     - 34 Common Crawl pages `document.write` it: 30 forum pages when framed, 2 mobile-site
       switchers, 2 others.
     - The HTTP Archive `element_count` metric (rendered DOM, so including `document.write`) finds
-      it on 6 of 15,366,242 mobile and 3 of 11,650,352 desktop root pages, 7 sites.
+      it on 6 of 15,366,242 mobile and 3 of 11,650,352 desktop root pages, 6 sites.
     - None has `</plaintext` after it. Live checks: tesera.io static; toothcorner.com,
       theatreinminneapolis.com and sinexsystems.com mobile-switcher `document.write`.
       petugas.haji.go.id served a 1 KB page and scuonlinebanking.com no longer has it.
@@ -221,7 +221,7 @@ place before browsers ship it.
 | One scan of `httparchive.crawl.requests` (7.29 TB). It finds `<svg>`/`<math>` blocks, each element of interest in them, and what follows its text ("plain" if its own end tag); candidate pages keep blocks and body in a scratch table | `queries/candidates.sql`, `queries/totals.csv`, `queries/kinds.csv` |
 | html5lib patched per variant | `cc/frparse.py`, `cc/selftest.py` |
 | Classify candidate blocks, then full bodies of all 7,121 pages differing in rcdata/rcdata-dc plus a seeded 500 of the 224,159 raw-only pages | `ha/classify.py`, `ha/selected.csv`, `ha/summary-blocks.txt`, `ha/summary-full.txt` |
-| Raw: all 500 sampled pages confirmed (499 Wix), so ~1,742 + 224,159 | `ha/summary-full.txt`, `ha/patterns-raw-sample.txt` |
+| Raw: all 500 sampled pages confirmed (238 with Wix's `[data-color=&quot;N&quot;]` rule), so ~1,742 + 224,159 | `ha/summary-full.txt`, `ha/patterns-raw-sample.txt` |
 | Patterns; counts without truncated-body artifacts | `ha/patterns.py` → `ha/patterns-rcdata.txt`; `ha/counts.py` → `ha/counts.txt` |
 | Exact child-node comparison, all RCDATA modes, comments included | `ha/mode_c.py` → `ha/mode_c.txt`, `ha/mode_c.json`; `ha/dc_exact.py` → `ha/dc_exact.txt` |
 | Foreign script states | `ha/script_states.py` → `ha/script_states.txt` |
@@ -245,7 +245,7 @@ artifact. So the HTTP Archive counts may undercount by a few percent.
 - rcdata is 1,450 in the exact child-node comparison, against 1,449 in the text-and-kinds
   comparison.
 - An earlier version gave 327 for rcdata-dc text changes, from a comparison that truncated text to
-  400 characters. The exact count is 346.
+  400 characters (still in `ha/counts.txt`). The exact count is 346 (`ha/dc_exact.txt`).
 
 ### Live comparison
 
@@ -257,9 +257,9 @@ artifact. So the HTTP Archive counts may undercount by a few percent.
 
 | Run | Pages | Persistent element change | New JS errors | Visible change |
 |---|---|---|---|---|
-| rcdata, seeded sample of the 1,444 rcdata pages (`sample-ha-rcdata.jsonl`) | 100 | 85 | 4 React hydration | 1 broken |
-| rcdata-dc, same pages | 100 | 85 | 4 React hydration | 0 (one diff was timing noise; a recheck matched) |
-| rcdata and rcdata-dc, the 5 unclosed pages | 5 | 5 | 0 | 3 broken, 1 minor |
+| rcdata, seeded sample of the 1,444 rcdata pages without the 5 unclosed ones (`sample-ha-rcdata.jsonl`) | 100 | 84/99 (one page failed to load) | 4 React hydration messages on 2 pages, 1 SyntaxError (returnpro.com) | 1 broken |
+| rcdata-dc, same pages | 100 | 84/99 | the same | 0 (one diff was timing noise; a recheck matched) |
+| rcdata and rcdata-dc, the 5 unclosed pages | 5 | 5 | 1 TypeError (dk.sloggi.com) | 3 broken, 1 minor |
 | raw, seeded raw-only Wix sample (`sample-ha-wix.jsonl`) | 100 | 17 | 0 | 5 worse |
 
 Common Crawl live runs: `out-rcdata-m2`, `out-rcdata-m3`, `out-wix-m1`, `out-rawother-m1`
@@ -279,12 +279,16 @@ Common Crawl live runs: `out-rcdata-m2`, `out-rcdata-m3`, `out-wix-m1`, `out-raw
 
 2026-10-01 crawl, run 2026-10-27: `queries/candidates.sql` 7.29 TB; totals 271 GB; kinds 0.5 GB;
 blocks copy 3.2 GB; bodies copy for selected pages 268 GB; `queries/plaintext.sql` (both
-clients) 11.2 GB; `queries/breakout-candidates.sql` (restored candidate table) 0.6 GB.
+clients) 11.2 GB; `queries/breakout-candidates.sql` (restored candidate table) 0.6 GB. The totals, kinds and copy
+queries (over the scratch table) aren't committed, only the totals and kinds results, and no committed file records the
+byte figures.
 
 ## Reproduce
 
 This run was done with the [`httparchive` skill](https://github.com/zcorpan/web-platform-skills/blob/main/docs/httparchive.md). The steps above are standalone and rerun the same analysis without the skill.
 
+Exception: `cc/plaintext_scan.py`, `ha/mode_c.py` and `ha/regex_recall.py` import the skill's WARC reader (`template/cc.py`) from `~/.claude/skills`.
+
 ## License
 
-MIT, see [LICENSE](LICENSE), for the scripts, analysis and text written for this research. Content from the crawl and the live web (`queries/`, `crawl/`, screenshots, page snippets) and third-party code (`vendor/`) belongs to its owners and isn't covered.
+MIT, see [LICENSE](LICENSE), for the scripts (including the SQL in `queries/*.sql`), analysis and text written for this research. Content from crawled and live pages belongs to its owners and isn't covered: the page URLs, snippets and text in `out-*` (`results.jsonl`, `analysis.jsonl`, the diff files), `out-cc/*.jsonl`, `sample-*.jsonl`, `ha/selected.csv`, `ha/mode_c.json`, `ha/*.txt` and the query results in `queries/` (`*.csv`, `*.json`), and the screenshots in `review/`.
